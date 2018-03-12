@@ -1,0 +1,72 @@
+Program	::=	(Declaration | FuncDeclaration)*
+
+Declaration	::= IDENTIFIER ':' Type ('=' Expression)? '\n'
+FuncDeclaration ::= 'def' IDENTIFIER '(' ArgsList? ')' '->' Type Block
+
+Block	::=	'begin' InnerBlock 'end'
+InnerBlock	::= '\n' ((Declaration | Statement | Expression) '\n')*
+
+Statement	::=
+	IfStmt
+	| ForStmt
+	| WhileStmt
+	| ReturnStmt
+
+Expression	::=
+	Expression '+' Expression
+	| Expression '-' Expression
+	| Expression '*' Expression
+	| Expression '/' Expression
+	| Expression '**' Expression
+	| Expression 'and' Expression
+	| Expression 'or' Expression
+	| 'not' Expression
+	| '-' Expression
+	| Expression '>' Expression
+	| Expression '<' Expression
+	| Expression '>=' Expression
+	| Expression '<=' Expression
+	| Expression '==' Expression
+	| Expression '!=' Expression
+	| '(' Expression ')'
+	| Assignment
+	| AtomExpr
+
+AtomExpr ::=
+	Name
+	| FuncCall
+	| NUMBER
+	| CHAR
+	| STRING
+	| BOOL
+
+Assignment ::= Name '=' Expression
+
+FuncCall	::=	IDENTIFIER '(' (Expression (',' Expression)* )? ')'
+
+IfStmt	::=	'if' Expression 'begin' InnerBlock ('elif' Expression InnerBlock)* ('else' Expression InnerBlock)? 'end'
+
+ForStmt	::=	'for' (Expression | Declaration) ';' Expression ';' Expression Block
+
+WhileStmt	::=	'while'	Expression Block
+
+ReturnStmt	::= 'return' Expression
+
+ArgsList	::= IDENTIFIER '&'? ':' Type (',' IDENTIFIER '&'? ':' Type)*
+
+Type	::=
+	Type '[' NUMBER? ']'
+	| 'int'
+	| 'float'
+	| 'char'
+	| 'void'
+
+Name	::=
+	Name '[' Expression ']'
+	| IDENTIFIER
+
+IDENTIFIER	::=	[A-z_][0-9A-z_]*
+NUMBER	::=	[0-9]+('.'[0-9]+)?
+CHAR	::= '\'' [^\']? '\''
+STRING	::= '\"' [^\"]* '\"'
+BOOL	::= 'True' | 'False'
