@@ -44,7 +44,7 @@ Assignment ::= Name '=' Expression
 
 FuncCall	::=	IDENTIFIER '(' (Expression (',' Expression)* )? ')'
 
-IfStmt	::=	'if' Expression 'begin' InnerBlock ('elif' Expression InnerBlock)* ('else' Expression InnerBlock)? 'end'
+IfStmt	::=	'if' Expression 'do' InnerBlock ('elif' Expression InnerBlock)* ('else' Expression InnerBlock)? 'end'
 
 ForStmt	::=	'for' (Expression | Declaration) ';' Expression ';' Expression Block
 

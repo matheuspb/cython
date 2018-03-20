@@ -19,10 +19,11 @@ elif	std::cout << "ELIF" << std::endl;
 else	std::cout << "ELSE" << std::endl;
 for	std::cout << "FOR" << std::endl;
 while	std::cout << "WHILE" << std::endl;
+do	std::cout << "DO" << std::endl;
 begin	std::cout << "BEGIN" << std::endl;
 end	std::cout << "END" << std::endl;
 return	std::cout << "RETURN" << std::endl;
-True|False	std::cout << "BOOL" << std::endl;
+True|False	std::cout << "<BOOL, " << yytext << ">" << std::endl;
 
 int	std::cout << "INT" << std::endl;
 float	std::cout << "FLOAT" << std::endl;
@@ -59,10 +60,12 @@ not	std::cout << "NOT" << std::endl;
 
 "="	std::cout << "ASSIGN" << std::endl;
 
-[a-zA-Z_][a-zA-Z_0-9]*	std::cout << "IDENTIFIER" << std::endl;
-[0-9]+(\.[0-9]+)?	std::cout << "NUMBER_L" << std::endl;
-\'[^\']?\'	std::cout << "CHAR_L" << std::endl;
-\"[^\"]*\"	std::cout << "STRING_L" << std::endl;
+[a-zA-Z_][a-zA-Z_0-9]* {
+	std::cout << "<IDENTIFIER, " << yytext << ">" << std::endl;
+}
+[0-9]+(\.[0-9]+)?	std::cout << "<NUMBER_L, " << yytext << ">" << std::endl;
+\'[^\']?\'	std::cout << "<CHAR_L, " << yytext << ">" << std::endl;
+\"[^\"]*\"	std::cout << "<STRING_L, " << yytext << ">" << std::endl;
 <<EOF>>	yyterminate();
 .	throw lexical_error(yylineno, yytext);
 
