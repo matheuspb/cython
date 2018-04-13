@@ -1,4 +1,7 @@
 *.o
+*.hh
 src/scanner.cpp
-src/scanner
+src/parser.cpp
+include/parser.h
+src/parser
 cython

@@ -1,87 +1,90 @@
 %{
 #include <iostream>
+#include <cstdlib>
+#include <string>
 #include <lexical_error.h>
+#include <parser.h>
+
+#define yyterminate() \
+		yypop_buffer_state(); \
+		return yy::cython_parser::make_EOF_T(yyloc);
+#define YY_DECL yy::cython_parser::symbol_type yylex()
+#define YY_USER_ACTION yyloc.step(); yyloc.columns(yyleng);
+
+static yy::location yyloc;
 %}
 
-%option yylineno noyywrap noinput nounput nodefault
+%option noyywrap noinput nounput nodefault
 
 %%
 
-[ \t]	/* ignore whitespace */
-\n+	std::cout << "NL" << std::endl;  /* ignores multiple new lines */
+[ \t]	yyloc.step(); /* ignore whitespace */
+\n+	{ /* ignores multiple new lines */
+	yyloc.lines(yyleng); yyloc.step(); return yy::cython_parser::make_NL(yyloc);
+}
 
-#[^\n]*\n	/* single line comment */
-\"\"\"[^\"]*\"\"\"\n?	/* multi-line comment */
+#[^\n]*\n { /* single line comment */
+	yyloc.lines(1); yyloc.step(); return yy::cython_parser::make_NL(yyloc);
+}
+\"\"\"[^\"]*\"\"\"	/* multi-line comment */
 
-def	std::cout << "DEF" << std::endl;
-if	std::cout << "IF" << std::endl;
-elif	std::cout << "ELIF" << std::endl;
-else	std::cout << "ELSE" << std::endl;
-for	std::cout << "FOR" << std::endl;
-while	std::cout << "WHILE" << std::endl;
-do	std::cout << "DO" << std::endl;
-begin	std::cout << "BEGIN" << std::endl;
-end	std::cout << "END" << std::endl;
-return	std::cout << "RETURN" << std::endl;
-True|False	std::cout << "<BOOL, " << yytext << ">" << std::endl;
+def		return yy::cython_parser::make_DEF(yyloc);
+if		return yy::cython_parser::make_IF(yyloc);
+elif	return yy::cython_parser::make_ELIF(yyloc);
+else	return yy::cython_parser::make_ELSE(yyloc);
+for		return yy::cython_parser::make_FOR(yyloc);
+while	return yy::cython_parser::make_WHILE(yyloc);
+do		return yy::cython_parser::make_DO(yyloc);
+begin	return yy::cython_parser::make_BEGIN_T(yyloc);
+end		return yy::cython_parser::make_END_T(yyloc);
+return	return yy::cython_parser::make_RETURN(yyloc);
+True	return yy::cython_parser::make_BOOL(true, yyloc);
+False	return yy::cython_parser::make_BOOL(false, yyloc);
 
-int	std::cout << "INT" << std::endl;
-float	std::cout << "FLOAT" << std::endl;
-char	std::cout << "CHAR" << std::endl;
-void	std::cout << "VOID" << std::endl;
+int		return yy::cython_parser::make_INT(yyloc);
+float	return yy::cython_parser::make_FLOAT(yyloc);
+char	return yy::cython_parser::make_CHAR(yyloc);
+void	return yy::cython_parser::make_VOID(yyloc);
 
-":"	std::cout << "COLON" << std::endl;
-";"	std::cout << "SEMICOLON" << std::endl;
-","	std::cout << "COMMA" << std::endl;
-"->"	std::cout << "ARROW" << std::endl;
-"&"	std::cout << "AMPERSEND" << std::endl;
+":"		return yy::cython_parser::make_COLON(yyloc);
+";"		return yy::cython_parser::make_SEMICOLON(yyloc);
+","		return yy::cython_parser::make_COMMA(yyloc);
+"->"	return yy::cython_parser::make_ARROW(yyloc);
+"&"		return yy::cython_parser::make_AMPERSEND(yyloc);
 
-"+"	std::cout << "PLUS" << std::endl;
-"-"	std::cout << "MINUS" << std::endl;
-"*"	std::cout << "TIMES" << std::endl;
-"/"	std::cout << "DIV" << std::endl;
-"**"	std::cout << "EXP" << std::endl;
+"+"		return yy::cython_parser::make_PLUS(yyloc);
+"-"		return yy::cython_parser::make_MINUS(yyloc);
+"*"		return yy::cython_parser::make_TIMES(yyloc);
+"/"		return yy::cython_parser::make_DIV(yyloc);
+"**"	return yy::cython_parser::make_EXP(yyloc);
 
-and	std::cout << "AND" << std::endl;
-or	std::cout << "OR" << std::endl;
-not	std::cout << "NOT" << std::endl;
+and		return yy::cython_parser::make_AND(yyloc);
+or		return yy::cython_parser::make_OR(yyloc);
+not		return yy::cython_parser::make_NOT(yyloc);
 
-"<"	std::cout << "LT" << std::endl;
-">"	std::cout << "GT" << std::endl;
-"<="	std::cout << "LE" << std::endl;
-">="	std::cout << "GE" << std::endl;
-"=="	std::cout << "EQ" << std::endl;
-"!="	std::cout << "NE" << std::endl;
+"<"		return yy::cython_parser::make_LT(yyloc);
+">"		return yy::cython_parser::make_GT(yyloc);
+"<="	return yy::cython_parser::make_LE(yyloc);
+">="	return yy::cython_parser::make_GE(yyloc);
+"=="	return yy::cython_parser::make_EQ(yyloc);
+"!="	return yy::cython_parser::make_NE(yyloc);
 
-"("	std::cout << "LPAREN" << std::endl;
-")"	std::cout << "RPAREN" << std::endl;
-"["	std::cout << "LBRACKET" << std::endl;
-"]"	std::cout << "RBRACKET" << std::endl;
+"("		return yy::cython_parser::make_LPAREN(yyloc);
+")"		return yy::cython_parser::make_RPAREN(yyloc);
+"["		return yy::cython_parser::make_LBRACKET(yyloc);
+"]"		return yy::cython_parser::make_RBRACKET(yyloc);
 
-"="	std::cout << "ASSIGN" << std::endl;
+"="		return yy::cython_parser::make_ASSIGN(yyloc);
 
 [a-zA-Z_][a-zA-Z_0-9]* {
-	std::cout << "<IDENTIFIER, " << yytext << ">" << std::endl;
+	return yy::cython_parser::make_IDENTIFIER(std::string(yytext), yyloc);
 }
-[0-9]+(\.[0-9]+)?	std::cout << "<NUMBER_L, " << yytext << ">" << std::endl;
-\'[^\']?\'	std::cout << "<CHAR_L, " << yytext << ">" << std::endl;
-\"[^\"]*\"	std::cout << "<STRING_L, " << yytext << ">" << std::endl;
+[0-9]+	return yy::cython_parser::make_INT_L(std::atoi(yytext), yyloc);
+[0-9]+(\.[0-9]+)? {
+	return yy::cython_parser::make_FLOAT_L(std::atof(yytext), yyloc);
+}
+\"[^\"]*\"	return yy::cython_parser::make_STRING_L(std::string(yytext), yyloc);
 <<EOF>>	yyterminate();
-.	throw lexical_error(yylineno, yytext);
+.	throw lexical_error(yyloc, yytext);
 
 %%
-
-int main(int argc, char** argv) {
-	if (argc > 1)
-		yyin = std::fopen(argv[1], "r");
-
-	try {
-		yylex();
-	} catch (const lexical_error& e) {
-		std::cout << "[Line " << e.line() << "] " << e.what() << std::endl;
-	}
-	yypop_buffer_state();  /* clean scanner memory */
-
-	if (yyin != stdin)
-		std::fclose(yyin);
-}
