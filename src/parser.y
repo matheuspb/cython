@@ -80,6 +80,7 @@ extern void yypop_buffer_state();
 /* TODO non-terminal symbols */
 
 /* TODO precedence */
+%right ASSIGN
 %left OR
 %left AND
 %left NOT
@@ -92,11 +93,15 @@ extern void yypop_buffer_state();
 %%
 
 program
-	: program declaration nl
-	| program func_declaration
+	: program_
+	| %empty
+	;
+
+program_
+	: program_ declaration nl
+	| program_ func_declaration
 	| declaration nl
 	| func_declaration
-	| %empty
 	;
 
 declaration
