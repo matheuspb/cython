@@ -80,6 +80,14 @@ extern void yypop_buffer_state();
 /* TODO non-terminal symbols */
 
 /* TODO precedence */
+%left OR
+%left AND
+%left NOT
+%left GT LT GE LE EQ NE
+%left PLUS MINUS
+%left TIMES DIV
+%right EXP
+%left UMINUS
 
 %%
 
@@ -132,7 +140,7 @@ expression
 	| expression AND expression
 	| expression OR expression
 	| NOT expression
-	| MINUS expression
+	| MINUS expression %prec UMINUS
 	| expression GT expression
 	| expression LT expression
 	| expression GE expression
