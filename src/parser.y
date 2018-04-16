@@ -12,6 +12,7 @@
 {
 #include <lexical_error.h>
 #include <string>
+#include <ast.h>
 }
 
 %code
@@ -77,9 +78,11 @@ extern void yypop_buffer_state();
 
 %token ASSIGN "="
 
-/* TODO non-terminal symbols */
+/* non-terminal symbols */
+%type <ast::block> inner_block block
+%type <ast::node*> line declaration statement expression
 
-/* TODO precedence */
+/* precedence */
 %right ASSIGN
 %left OR
 %left AND
@@ -115,18 +118,18 @@ func_declaration
 	;
 
 block
-	: BEGIN_T inner_block END_T
+	: BEGIN_T inner_block END_T { $$ = $2; }
 	;
 
 inner_block
-	: inner_block line
-	| nl line
+	: inner_block line { $1.add_line($2); $$ = $1; }
+	| nl line { $$ = ast::block($2); }
 	;
 
 line
-	: declaration nl
-	| statement nl
-	| expression nl
+	: declaration nl { $$ = $1; }
+	| statement nl { $$ = $1; }
+	| expression nl { $$ = $1; }
 	;
 
 statement
@@ -137,22 +140,50 @@ statement
 	;
 
 expression
-	: expression PLUS expression
-	| expression MINUS expression
-	| expression TIMES expression
-	| expression DIV expression
-	| expression EXP expression
-	| expression AND expression
-	| expression OR expression
-	| NOT expression
-	| MINUS expression %prec UMINUS
-	| expression GT expression
-	| expression LT expression
-	| expression GE expression
-	| expression LE expression
-	| expression EQ expression
-	| expression NE expression
-	| LPAREN expression RPAREN
+	: expression PLUS expression {
+		$$ = new ast::binary_operation(ast::plus, $1, $3);
+	}
+	| expression MINUS expression {
+		$$ = new ast::binary_operation(ast::minus, $1, $3);
+	}
+	| expression TIMES expression {
+		$$ = new ast::binary_operation(ast::times, $1, $3);
+	}
+	| expression DIV expression {
+		$$ = new ast::binary_operation(ast::div, $1, $3);
+	}
+	| expression EXP expression {
+		$$ = new ast::binary_operation(ast::exp, $1, $3);
+	}
+	| expression AND expression {
+		$$ = new ast::binary_operation(ast::_and, $1, $3);
+	}
+	| expression OR expression {
+		$$ = new ast::binary_operation(ast::_or, $1, $3);
+	}
+	| NOT expression { $$ = new ast::unary_operation(ast::_not, $2); }
+	| MINUS expression %prec UMINUS {
+		$$ = new ast::unary_operation(ast::uminus, $2);
+	}
+	| expression GT expression {
+		$$ = new ast::binary_operation(ast::gt, $1, $3);
+	}
+	| expression LT expression {
+		$$ = new ast::binary_operation(ast::lt, $1, $3);
+	}
+	| expression GE expression {
+		$$ = new ast::binary_operation(ast::ge, $1, $3);
+	}
+	| expression LE expression {
+		$$ = new ast::binary_operation(ast::le, $1, $3);
+	}
+	| expression EQ expression {
+		$$ = new ast::binary_operation(ast::eq, $1, $3);
+	}
+	| expression NE expression {
+		$$ = new ast::binary_operation(ast::ne, $1, $3);
+	}
+	| LPAREN expression RPAREN { $$ = $2; }
 	| assignment
 	| atom_expr
 	;
