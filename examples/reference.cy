@@ -1,6 +1,10 @@
-def f(a&: int) -> void:
+def f(a&: int) -> void begin
 	a = 1
+end
 
-a = 0
-f(a)
-print(a)  # should print '1'
+def main() -> void begin
+	a: int = 0
+	f(a)
+	# test
+	print(a)  # should print '1'
+end
