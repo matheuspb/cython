@@ -132,7 +132,6 @@ func_declaration
 	| DEF IDENTIFIER LPAREN RPAREN ARROW type block nl {
 		$$ = new ast::func($2, $6, $7);
 	}
-	| DEF error block nl { yyerrok; }
 	;
 
 block
@@ -148,7 +147,6 @@ line
 	: declaration nl { $$ = $1; }
 	| statement nl { $$ = $1; }
 	| expression nl { $$ = $1; }
-	| error nl { yyerrok; }
 	;
 
 statement
@@ -314,7 +312,6 @@ void show_error(const yy::location& l, const std::string &m) {
 
 void yy::cython_parser::error(const location_type& l, const std::string &m) {
 	show_error(l, m);
-	printf("erro");
 }
 
 int main(int argc, char** argv) {
