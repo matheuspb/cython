@@ -109,6 +109,7 @@ std::list<ast::node*> program;
 program
 	: program_
 	| %empty
+	| nl program_
 	;
 
 program_
