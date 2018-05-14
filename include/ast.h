@@ -63,11 +63,12 @@ private:
 class name : public node {
 public:
 	name() = default;
-	explicit name(std::string identifier) : node{}, identifier{identifier} {}
+	explicit name(std::string identifier) : node{}, _identifier{identifier} {}
 	void add_offset(node* offset) { offsets.push_back(offset); }
+	std::string identifier() const { return _identifier; }
 
 private:
-	std::string identifier;
+	std::string _identifier;
 	std::list<node*> offsets;
 };
 

@@ -23,4 +23,19 @@ private:
 	const std::string message;
 };
 
+class semantic_error : public std::exception {
+public:
+	semantic_error(const std::string& error)
+		: message{build_message(error)} {}
+
+	const char* what() const noexcept { return message.c_str(); }
+
+private:
+	static std::string build_message(const std::string& error) {
+		return "Semantic error, " + error;
+	}
+
+	const std::string message;
+};
+
 #endif

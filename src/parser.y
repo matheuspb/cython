@@ -12,8 +12,9 @@
 {
 #include <string>
 #include <list>
-#include <lexical_error.h>
+#include <errors.h>
 #include <ast.h>
+#include <st.h>
 }
 
 %code
@@ -23,6 +24,7 @@ extern yy::cython_parser::symbol_type yylex();
 extern void yypop_buffer_state();
 
 std::list<ast::node*> program;
+st::symbol_table* current = new st::symbol_table;
 }
 
 /* terminal symbols */
@@ -119,19 +121,35 @@ program_
 	| func_declaration { program.push_back($1); }
 	;
 
+start_scope
+	: %empty { current = new st::symbol_table(current); }
+	;
+
+end_scope
+	: %empty { current = current->parent; }
+	;
+
 declaration
-	: IDENTIFIER COLON type { $$ = new ast::declaration($1, $3, nullptr); }
+	: IDENTIFIER COLON type {
+		$$ = new ast::declaration($1, $3, nullptr);
+		if (!current->insert_variable($1, $3))
+			throw semantic_error("variable " + $1 + " already declared");
+	}
 	| IDENTIFIER COLON type ASSIGN expression {
 		$$ = new ast::declaration($1, $3, $5);
+		if (!current->insert_variable($1, $3))
+			throw semantic_error("variable " + $1 + " already declared");
+		current->initialize_variable($1);
 	}
 	;
 
 func_declaration
-	: DEF IDENTIFIER LPAREN args_list RPAREN ARROW type block nl {
-		$$ = new ast::func($2, $4, $7, $8);
+	: DEF IDENTIFIER LPAREN args_list RPAREN ARROW type
+			start_scope block end_scope nl {
+		$$ = new ast::func($2, $4, $7, $9);
 	}
-	| DEF IDENTIFIER LPAREN RPAREN ARROW type block nl {
-		$$ = new ast::func($2, $6, $7);
+	| DEF IDENTIFIER LPAREN RPAREN ARROW type start_scope block end_scope nl {
+		$$ = new ast::func($2, $6, $8);
 	}
 	;
 
@@ -207,7 +225,12 @@ expression
 	;
 
 atom_expr
-	: name { $$ = new ast::name($1); }
+	: name {
+		$$ = new ast::name($1);
+		if (!current->is_initialized($1.identifier()))
+			throw semantic_error("use of uninitialized variable " +
+				$1.identifier());
+	}
 	| func_call { $$ = $1; }
 	| INT_L { $$ = new ast::int_l($1); }
 	| FLOAT_L { $$ = new ast::float_l($1); }
@@ -216,7 +239,10 @@ atom_expr
 	;
 
 assignment
-	: name ASSIGN expression { $$ = new ast::assignment($1, $3); }
+	: name ASSIGN expression {
+		$$ = new ast::assignment($1, $3);
+		current->initialize_variable($1.identifier());
+	}
 	;
 
 func_call
@@ -297,7 +323,11 @@ type
 
 name
 	: name LBRACKET expression RBRACKET { $1.add_offset($3); $$ = $1; }
-	| IDENTIFIER { $$ = ast::name($1); }
+	| IDENTIFIER {
+		$$ = ast::name($1);
+		if (!current->is_declared($1))
+			throw semantic_error("use of undeclared variable " + $1);
+	}
 	;
 
 nl
@@ -325,6 +355,9 @@ int main(int argc, char** argv) {
 	} catch (const lexical_error& e) {
 		yypop_buffer_state();  // cleans scanner memory
 		show_error(e.location(), e.what());
+	} catch (const semantic_error& e) {
+		yypop_buffer_state();  // cleans scanner memory
+		std::cout << e.what() << std::endl;
 	}
 
 	if (yyin != stdin)
