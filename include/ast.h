@@ -41,21 +41,25 @@ private:
 
 class binary_operation : public node {
 public:
-	binary_operation(operation op, node* left, node* right)
-		: node{}, op{op}, left{left}, right{right} {}
+	binary_operation(operation op, type t, node* left, node* right)
+		: node{}, op{op}, t{t}, left{left}, right{right} {}
+	type t() { return t; }
 
 private:
 	operation op;
+	type t;
 	node* left;
 	node* right;
 };
 
 class unary_operation : public node {
 public:
-	unary_operation(operation op, node* operand)
-		: node{}, op{op}, operand{operand} {}
+	unary_operation(operation op, type t, node* operand)
+		: node{}, op{op}, t{t}, operand{operand} {}
+	type t() { return t; }
 
 private:
+	type t;
 	operation op;
 	node* operand;
 };
@@ -196,6 +200,7 @@ public:
 	arg() = default;
 	arg(std::string identifier, type t, bool reference)
 		: node{}, identifier{identifier}, t{t}, reference{reference} {}
+	type t() { return t; }
 
 private:
 	std::string identifier;
@@ -207,6 +212,7 @@ class declaration : public node {
 public:
 	declaration(std::string name, type t, node* expression)
 		: node{}, name{name}, t{t}, expression{expression} {}
+	type t() { return t; }
 
 private:
 	std::string name;
@@ -220,6 +226,7 @@ public:
 		: node{}, name{name}, args{args}, t{t}, code{code} {}
 	func(std::string name, type t, block code)
 		: node{}, name{name}, t{t}, code{code} {}
+	type t() { return t; }
 
 private:
 	std::string name;
