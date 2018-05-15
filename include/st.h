@@ -2,6 +2,7 @@
 #define ST_H
 
 #include <unordered_map>
+#include <errors.h>
 #include <ast.h>
 
 namespace st {
@@ -38,6 +39,9 @@ public:
 	}
 
 	bool insert_variable(const std::string& name, ast::type t) {
+		if (t.t() == ast::type::_void)
+			throw semantic_error("cannot declare variable of type void");
+
 		if (symbols.find(name) == symbols.end()) {
 			symbols[name] = new variable(t);
 			return true;
@@ -58,7 +62,7 @@ public:
 		return dynamic_cast<variable*>(lookup(name))->is_initialized();
 	}
 
-	symbol_table* parent{nullptr};
+	symbol_table * const parent{nullptr};
 
 private:
 	std::unordered_map<std::string, st_entry*> symbols;

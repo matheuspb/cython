@@ -182,11 +182,12 @@ public:
 	enum _type { _int, _float, _char, _void };
 
 	type() = default;
-	explicit type(_type t) : node{}, t{t} {}
+	explicit type(_type t) : node{}, _t{t} {}
 	void add_dimension(unsigned int size) { dimensions.push_back(size); }
+	_type t() const { return _t; }
 
 private:
-	_type t{_void};
+	_type _t{_void};
 	std::list<unsigned int> dimensions;
 };
 
