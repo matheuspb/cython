@@ -183,11 +183,14 @@ private:
 
 class type : public node {
 public:
-	enum _type { _int, _float, _char, _void };
+	enum _type { _int, _float, _char, _void, _bool };
 
 	type() = default;
 	explicit type(_type t) : node{}, _t{t} {}
 	void add_dimension(unsigned int size) { dimensions.push_back(size); }
+	bool compatible(type second. operation op) {
+
+	}
 	_type t() const { return _t; }
 
 private:
