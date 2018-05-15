@@ -132,13 +132,17 @@ end_scope
 declaration
 	: IDENTIFIER COLON type {
 		$$ = new ast::declaration($1, $3, nullptr);
+		if ($3.t() == ast::type::_void)
+			throw semantic_error(@1, "cannot declare variable of type void");
 		if (!current->insert_variable($1, $3))
-			throw semantic_error("variable " + $1 + " already declared");
+			throw semantic_error(@1, "variable " + $1 + " already declared");
 	}
 	| IDENTIFIER COLON type ASSIGN expression {
 		$$ = new ast::declaration($1, $3, $5);
+		if ($3.t() == ast::type::_void)
+			throw semantic_error(@1, "cannot declare variable of type void");
 		if (!current->insert_variable($1, $3))
-			throw semantic_error("variable " + $1 + " already declared");
+			throw semantic_error(@1, "variable " + $1 + " already declared");
 		current->initialize_variable($1);
 	}
 	;
@@ -228,7 +232,7 @@ atom_expr
 	: name {
 		$$ = new ast::name($1);
 		if (!current->is_initialized($1.identifier()))
-			throw semantic_error("use of uninitialized variable " +
+			throw semantic_error(@1, "use of uninitialized variable " +
 				$1.identifier());
 	}
 	| func_call { $$ = $1; }
@@ -326,7 +330,7 @@ name
 	| IDENTIFIER {
 		$$ = ast::name($1);
 		if (!current->is_declared($1))
-			throw semantic_error("use of undeclared variable " + $1);
+			throw semantic_error(@1, "use of undeclared variable " + $1);
 	}
 	;
 
@@ -357,7 +361,7 @@ int main(int argc, char** argv) {
 		show_error(e.location(), e.what());
 	} catch (const semantic_error& e) {
 		yypop_buffer_state();  // cleans scanner memory
-		std::cout << e.what() << std::endl;
+		show_error(e.location(), e.what());
 	}
 
 	if (yyin != stdin)

@@ -39,9 +39,6 @@ public:
 	}
 
 	bool insert_variable(const std::string& name, ast::type t) {
-		if (t.t() == ast::type::_void)
-			throw semantic_error("cannot declare variable of type void");
-
 		if (symbols.find(name) == symbols.end()) {
 			symbols[name] = new variable(t);
 			return true;
