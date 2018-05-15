@@ -1,9 +1,9 @@
 #ifndef ST_H
 #define ST_H
 
-#include <unordered_map>
-#include <errors.h>
 #include <ast.h>
+#include <errors.h>
+#include <unordered_map>
 
 namespace st {
 
@@ -62,12 +62,12 @@ public:
 		return dynamic_cast<variable*>(lookup(name))->is_initialized();
 	}
 
-	symbol_table * const parent{nullptr};
+	symbol_table* const parent{nullptr};
 
 private:
 	std::unordered_map<std::string, st_entry*> symbols;
 };
 
-}
+}  // namespace st
 
 #endif
