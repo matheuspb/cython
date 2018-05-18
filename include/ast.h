@@ -39,15 +39,70 @@ private:
 	std::list<node*> lines;
 };
 
+class type : public node {
+public:
+	enum _type { _int, _float, _char, _void, _bool };
+
+	type() = default;
+	explicit type(_type t) : node{}, _t{t} {}
+	void add_dimension(unsigned int size) { dimensions.push_back(size); }
+	bool compatible(type second) {
+		if (_t == _int || _t == _float || _t == _bool) {
+			if (second.t() == _int || second.t() == _float || second.t() == _bool)
+				return true;
+		}
+		return false;
+	}
+	bool compatible() {
+			if (_t == _int || _t == _float || _t == _bool)
+				return true;
+			return false;
+	}
+	type* cast(type second, operation oper) {
+		switch (oper) {
+			case minus :
+			case times :
+			case div :
+			case plus :
+			case exp :
+				if (second.t() == _float || t() == _float)
+					return new type(_float);
+				else return new type(_int);
+
+			case _and :
+			case _or :
+			case gt :
+			case lt :
+			case ge :
+			case le :
+			case eq :
+			case ne :
+			case _not :
+				return new type(_bool);
+
+			case uminus :
+				return new type(t());
+
+			default:
+				return new type(_void);
+		}
+	}
+	_type t() const { return _t; }
+
+private:
+	_type _t{_void};
+	std::list<unsigned int> dimensions;
+};
+
 class binary_operation : public node {
 public:
 	binary_operation(operation op, type t, node* left, node* right)
-		: node{}, op{op}, t{t}, left{left}, right{right} {}
-	type t() { return t; }
+		: node{}, op{op}, _t{t}, left{left}, right{right} {}
+	type t() const { return _t; }
 
 private:
 	operation op;
-	type t;
+	type _t;
 	node* left;
 	node* right;
 };
@@ -55,11 +110,11 @@ private:
 class unary_operation : public node {
 public:
 	unary_operation(operation op, type t, node* operand)
-		: node{}, op{op}, t{t}, operand{operand} {}
-	type t() { return t; }
+		: node{}, op{op}, _t{t}, operand{operand} {}
+	type t() const { return _t; }
 
 private:
-	type t;
+	type _t;
 	operation op;
 	node* operand;
 };
@@ -181,60 +236,43 @@ private:
 	bool b;
 };
 
-class type : public node {
-public:
-	enum _type { _int, _float, _char, _void, _bool };
-
-	type() = default;
-	explicit type(_type t) : node{}, _t{t} {}
-	void add_dimension(unsigned int size) { dimensions.push_back(size); }
-	bool compatible(type second. operation op) {
-
-	}
-	_type t() const { return _t; }
-
-private:
-	_type _t{_void};
-	std::list<unsigned int> dimensions;
-};
-
 class arg : public node {
 public:
 	arg() = default;
 	arg(std::string identifier, type t, bool reference)
-		: node{}, identifier{identifier}, t{t}, reference{reference} {}
-	type t() { return t; }
+		: node{}, identifier{identifier}, _t{t}, reference{reference} {}
+	type t() const { return _t; }
 
 private:
 	std::string identifier;
-	type t;
+	type _t;
 	bool reference{false};
 };
 
 class declaration : public node {
 public:
 	declaration(std::string name, type t, node* expression)
-		: node{}, name{name}, t{t}, expression{expression} {}
-	type t() { return t; }
+		: node{}, name{name}, _t{t}, expression{expression} {}
+	type t() const { return _t; }
 
 private:
 	std::string name;
-	type t;
+	type _t;
 	node* expression;
 };
 
 class func : public node {
 public:
 	func(std::string name, std::list<arg> args, type t, block code)
-		: node{}, name{name}, args{args}, t{t}, code{code} {}
+		: node{}, name{name}, args{args}, _t{t}, code{code} {}
 	func(std::string name, type t, block code)
-		: node{}, name{name}, t{t}, code{code} {}
-	type t() { return t; }
+		: node{}, name{name}, _t{t}, code{code} {}
+	type t() const { return _t; }
 
 private:
 	std::string name;
 	std::list<arg> args;
-	type t;
+	type _t;
 	block code;
 };
 
