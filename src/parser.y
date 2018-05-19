@@ -23,8 +23,9 @@ extern FILE* yyin;
 extern yy::cython_parser::symbol_type yylex();
 extern void yypop_buffer_state();
 
-std::list<ast::node*> program;
+/* current symbol table being used during parsing */
 st::symbol_table* current = new st::symbol_table;
+std::list<ast::node*> program;
 }
 
 /* terminal symbols */
@@ -150,10 +151,16 @@ declaration
 func_declaration
 	: DEF IDENTIFIER LPAREN args_list RPAREN ARROW type
 			start_scope block end_scope nl {
-		$$ = new ast::func($2, $4, $7, $9);
+		auto node = new ast::func($2, $4, $7, $9);
+		$$ = node;
+		if (!current->insert_function($2, node))
+			throw semantic_error(@1, "function " + $2 + " already defined");
 	}
 	| DEF IDENTIFIER LPAREN RPAREN ARROW type start_scope block end_scope nl {
-		$$ = new ast::func($2, $6, $8);
+		auto node = new ast::func($2, $6, $8);
+		$$ = node;
+		if (!current->insert_function($2, node))
+			throw semantic_error(@1, "function " + $2 + " already defined");
 	}
 	;
 
@@ -232,8 +239,8 @@ atom_expr
 	: name {
 		$$ = new ast::name($1);
 		if (!current->is_initialized($1.identifier()))
-			throw semantic_error(@1, "use of uninitialized variable " +
-				$1.identifier());
+			throw semantic_error(@1,
+				"use of uninitialized variable " + $1.identifier());
 	}
 	| func_call { $$ = $1; }
 	| INT_L { $$ = new ast::int_l($1); }
@@ -356,6 +363,9 @@ int main(int argc, char** argv) {
 	try {
 		yy::cython_parser p;
 		p.parse();
+
+		for (auto n: program)
+			n->verify_function_calls();
 	} catch (const lexical_error& e) {
 		yypop_buffer_state();  // cleans scanner memory
 		show_error(e.location(), e.what());

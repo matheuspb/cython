@@ -4,6 +4,7 @@
 #include <ast.h>
 #include <errors.h>
 #include <unordered_map>
+#include <list>
 
 namespace st {
 
@@ -15,7 +16,7 @@ public:
 
 class variable : public st_entry {
 public:
-	variable(ast::type t) : st_entry{}, t{t} {}
+	explicit variable(ast::type t) : st_entry{}, t{t} {}
 	void initialize() { initialized = true; }
 	bool is_initialized() { return initialized; }
 
@@ -24,10 +25,19 @@ private:
 	bool initialized{false};
 };
 
+class function : public st_entry {
+public:
+	explicit function(ast::func* declaration)
+		: declaration{declaration} {}
+
+private:
+	ast::func* declaration;
+};
+
 class symbol_table {
 public:
 	symbol_table() = default;
-	symbol_table(symbol_table* parent) : parent{parent} {}
+	explicit symbol_table(symbol_table* parent) : parent{parent} {}
 
 	/* searches recursively through the STs for a given identifier */
 	st_entry* lookup(const std::string& name) const {
@@ -57,6 +67,15 @@ public:
 
 	bool is_initialized(const std::string& name) const {
 		return dynamic_cast<variable*>(lookup(name))->is_initialized();
+	}
+
+	bool insert_function(const std::string& name, ast::func* declaration) {
+		if (symbols.find(name) == symbols.end()) {
+			symbols[name] = new function(declaration);
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	symbol_table* const parent{nullptr};
