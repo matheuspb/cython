@@ -257,8 +257,10 @@ assignment
 	;
 
 func_call
-	: IDENTIFIER LPAREN parameters RPAREN { $$ = new ast::func_call($1, $3); }
-	| IDENTIFIER LPAREN RPAREN { $$ = new ast::func_call($1); }
+	: IDENTIFIER LPAREN parameters RPAREN {
+		$$ = new ast::func_call($1, $3, @1);
+	}
+	| IDENTIFIER LPAREN RPAREN { $$ = new ast::func_call($1, @1); }
 	;
 
 parameters

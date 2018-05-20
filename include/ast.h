@@ -2,6 +2,7 @@
 #define AST_H
 
 #include <list>
+#include <location.hh>
 #include <string>
 
 namespace ast {
@@ -301,9 +302,11 @@ private:
 
 class func_call : public node {
 public:
-	func_call(std::string name, std::list<node*> parameters)
-		: node{}, name{name}, parameters{parameters} {}
-	func_call(std::string name) : node{}, name{name} {}
+	func_call(
+		std::string name, std::list<node*> parameters, yy::location location)
+		: node{}, name{name}, parameters{parameters}, location{location} {}
+	func_call(std::string name, yy::location location)
+		: node{}, name{name}, location{location} {}
 
 	const std::string& func_name() const { return name; }
 
@@ -313,6 +316,7 @@ public:
 private:
 	std::string name;
 	std::list<node*> parameters;
+	yy::location location;
 };
 
 }  // namespace ast
