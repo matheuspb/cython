@@ -3,8 +3,8 @@
 
 #include <ast.h>
 #include <errors.h>
-#include <unordered_map>
 #include <list>
+#include <unordered_map>
 
 namespace st {
 
@@ -27,8 +27,7 @@ private:
 
 class function : public st_entry {
 public:
-	explicit function(ast::func* declaration)
-		: declaration{declaration} {}
+	explicit function(ast::func* declaration) : declaration{declaration} {}
 
 private:
 	ast::func* declaration;

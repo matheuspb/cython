@@ -42,7 +42,7 @@ public:
 	void add_line(node* line) { lines.push_back(line); }
 
 	void verify_function_calls() const {
-		for (auto line: lines)
+		for (auto line : lines)
 			line->verify_function_calls();
 	}
 
@@ -88,7 +88,7 @@ public:
 	std::string identifier() const { return _identifier; }
 
 	void verify_function_calls() const {
-		for (auto offset: offsets)
+		for (auto offset : offsets)
 			offset->verify_function_calls();
 	}
 
@@ -140,7 +140,7 @@ public:
 	void verify_function_calls() const {
 		cond->verify_function_calls();
 		if_block.verify_function_calls();
-		for (auto elif: elif_stmts)
+		for (auto elif : elif_stmts)
 			elif.verify_function_calls();
 		else_block.verify_function_calls();
 	}

@@ -7,6 +7,6 @@ void ast::func_call::verify_function_calls() const {
 	if (current->lookup(name) == nullptr)
 		throw semantic_error(location, "calling unknown function " + name);
 
-	for (auto parameter: parameters)
+	for (auto parameter : parameters)
 		parameter->verify_function_calls();
 }
