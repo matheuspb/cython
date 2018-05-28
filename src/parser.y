@@ -149,15 +149,15 @@ declaration
 	;
 
 func_declaration
-	: DEF IDENTIFIER LPAREN args_list RPAREN ARROW type
-			start_scope block end_scope nl {
-		auto node = new ast::func($2, $4, $7, $9);
+	: DEF IDENTIFIER start_scope LPAREN args_list RPAREN
+			ARROW type block end_scope nl {
+		auto node = new ast::func($2, $5, $8, $9);
 		$$ = node;
 		if (!current->insert_function($2, node))
 			throw semantic_error(@1, "function " + $2 + " already defined");
 	}
-	| DEF IDENTIFIER LPAREN RPAREN ARROW type start_scope block end_scope nl {
-		auto node = new ast::func($2, $6, $8);
+	| DEF IDENTIFIER start_scope LPAREN RPAREN ARROW type block end_scope nl {
+		auto node = new ast::func($2, $7, $8);
 		$$ = node;
 		if (!current->insert_function($2, node))
 			throw semantic_error(@1, "function " + $2 + " already defined");
@@ -321,8 +321,17 @@ args_list
 	;
 
 arg
-	: IDENTIFIER COLON type { $$ = ast::arg($1, $3, false); }
-	| IDENTIFIER AMPERSEND COLON type { $$ = ast::arg($1, $4, true); }
+	: IDENTIFIER COLON type {
+		current->insert_variable($1, $3);
+		current->initialize_variable($1);
+		$$ = ast::arg($1, $3, false);
+	}
+	| IDENTIFIER AMPERSEND COLON type {
+		// TODO reference (&) arguments
+		current->insert_variable($1, $4);
+		current->initialize_variable($1);
+		$$ = ast::arg($1, $4, true);
+	}
 	;
 
 type
