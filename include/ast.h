@@ -94,10 +94,15 @@ private:
 	std::list<unsigned int> dimensions;
 };
 
-class binary_operation : public node {
+class expr : public node {
+public:
+	virtual type t() const = 0;
+};
+
+class binary_operation : public expr {
 public:
 	binary_operation(operation op, type t, node* left, node* right)
-		: node{}, op{op}, _t{t}, left{left}, right{right} {}
+		: op{op}, _t{t}, left{left}, right{right} {}
 	type t() const { return _t; }
 
 private:
@@ -107,15 +112,15 @@ private:
 	node* right;
 };
 
-class unary_operation : public node {
+class unary_operation : public expr {
 public:
 	unary_operation(operation op, type t, node* operand)
-		: node{}, op{op}, _t{t}, operand{operand} {}
+		: op{op}, _t{t}, operand{operand} {}
 	type t() const { return _t; }
 
 private:
-	type _t;
 	operation op;
+	type _t;
 	node* operand;
 };
 
@@ -236,11 +241,11 @@ private:
 	bool b;
 };
 
-class arg : public node {
+class arg : public expr {
 public:
 	arg() = default;
 	arg(std::string identifier, type t, bool reference)
-		: node{}, identifier{identifier}, _t{t}, reference{reference} {}
+		: identifier{identifier}, _t{t}, reference{reference} {}
 	type t() const { return _t; }
 
 private:
@@ -249,10 +254,10 @@ private:
 	bool reference{false};
 };
 
-class declaration : public node {
+class declaration : public expr {
 public:
 	declaration(std::string name, type t, node* expression)
-		: node{}, name{name}, _t{t}, expression{expression} {}
+		: name{name}, _t{t}, expression{expression} {}
 	type t() const { return _t; }
 
 private:
@@ -261,12 +266,12 @@ private:
 	node* expression;
 };
 
-class func : public node {
+class func : public expr {
 public:
 	func(std::string name, std::list<arg> args, type t, block code)
-		: node{}, name{name}, args{args}, _t{t}, code{code} {}
+		: name{name}, args{args}, _t{t}, code{code} {}
 	func(std::string name, type t, block code)
-		: node{}, name{name}, _t{t}, code{code} {}
+		: name{name}, _t{t}, code{code} {}
 	type t() const { return _t; }
 
 private:
