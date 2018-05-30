@@ -85,10 +85,9 @@ st::symbol_table* current = new st::symbol_table;
 
 /* non-terminal symbols */
 %type <ast::block> inner_block block else
-%type <ast::expr*> expression
-%type <ast::node*> line declaration func_declaration atom_expr
+%type <ast::expr*> expression atom_expr assignment func_call
+%type <ast::node*> line declaration func_declaration 
 %type <ast::node*> statement if_stmt for_stmt while_stmt return_stmt
-%type <ast::node*> assignment func_call
 %type <std::list<ast::elif_stmt>> elif
 %type <ast::name> name
 %type <ast::arg> arg
@@ -278,7 +277,8 @@ expression
 
 atom_expr
 	: name {
-		$$ = new ast::name($1);
+		// fix type
+		$$ = new ast::name($1, * new ast::type(ast::type::_void));
 		if (!current->is_initialized($1.identifier()))
 			throw semantic_error(@1, "use of uninitialized variable " +
 				$1.identifier());
@@ -298,8 +298,9 @@ assignment
 	;
 
 func_call
-	: IDENTIFIER LPAREN parameters RPAREN { $$ = new ast::func_call($1, $3); }
-	| IDENTIFIER LPAREN RPAREN { $$ = new ast::func_call($1); }
+	// fix types
+	: IDENTIFIER LPAREN parameters RPAREN { $$ = new ast::func_call($1, $3, * new ast::type(ast::type::_void)); }
+	| IDENTIFIER LPAREN RPAREN { $$ = new ast::func_call($1, * new ast::type(ast::type::_void)); }
 	;
 
 parameters
@@ -391,7 +392,8 @@ type
 name
 	: name LBRACKET expression RBRACKET { $1.add_offset($3); $$ = $1; }
 	| IDENTIFIER {
-		$$ = ast::name($1);
+		//fix type
+		$$ = ast::name($1, * new ast::type(ast::type::_void));
 		if (!current->is_declared($1))
 			throw semantic_error(@1, "use of undeclared variable " + $1);
 	}
