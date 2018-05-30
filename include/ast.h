@@ -124,25 +124,30 @@ private:
 	node* operand;
 };
 
-class name : public node {
+class name : public expr {
 public:
 	name() = default;
-	explicit name(std::string identifier) : node{}, _identifier{identifier} {}
+	explicit name(std::string identifier, type t) 
+		: 	_identifier{identifier}, _t(t) {}
 	void add_offset(node* offset) { offsets.push_back(offset); }
 	std::string identifier() const { return _identifier; }
+	type t() const { return _t; }
 
 private:
+	type _t;
 	std::string _identifier;
 	std::list<node*> offsets;
 };
 
-class assignment : public node {
+class assignment : public expr {
 public:
 	assignment() = default;
-	assignment(name variable, node* expression)
-		: node{}, variable{variable}, expression{expression} {}
+	assignment(name variable, type t, node* expression)
+		: variable{variable}, _t(t), expression{expression} {}
+	type t() const { return _t; }	
 
 private:
+	type _t;
 	name variable;
 	node* expression;
 };
@@ -297,14 +302,16 @@ private:
 	block code;
 };
 
-class func_call : public node {
+class func_call : public expr {
 public:
-	func_call(std::string name, std::list<node*> parameters)
-		: node{}, name{name}, parameters{parameters} {}
-	func_call(std::string name) : node{}, name{name} {}
+	func_call(std::string name, type t, std::list<node*> parameters)
+		: name{name}, _t(t), parameters{parameters} {}
+	func_call(std::string name, type t) : name{name}, _t(t) {}
+	type t() const { return _t; }
 
 private:
 	std::string name;
+	type _t;
 	std::list<node*> parameters;
 };
 
