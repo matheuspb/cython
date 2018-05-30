@@ -209,35 +209,51 @@ private:
 	node* expression;
 };
 
-class int_l : public node {
+class int_l : public expr {
 public:
-	explicit int_l(int value) : node{}, value{value} {}
+	explicit int_l(int value) : value{value} {
+		_t = new type(_int);
+	}
+	type t() const { return _t; }
 
 private:
+	type _t;
 	int value;
 };
 
-class float_l : public node {
+class float_l : public expr {
 public:
-	explicit float_l(double value) : node{}, value{value} {}
+	explicit float_l(double value) : value{value} {
+		_t = new type(_float);
+	}
+	type t() const { return _t; }
 
 private:
+	type _t;
 	double value;
 };
 
-class string_l : public node {
+class string_l : public expr {
 public:
-	explicit string_l(std::string str) : node{}, str{str} {}
+	explicit string_l(std::string str) : str{str} {
+		_t = new type(_char);
+	}
+	type t() const { return _t; }
 
 private:
+	type _t;
 	std::string str;
 };
 
-class bool_l : public node {
+class bool_l : public expr {
 public:
-	explicit bool_l(bool b) : node{}, b{b} {}
+	explicit bool_l(bool b) : b{b} {
+		_t = new type(_bool);
+	}
+	type t() const { return _t; }
 
 private:
+	type _t;
 	bool b;
 };
 
