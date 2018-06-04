@@ -287,6 +287,7 @@ atom_expr
 		if (!current->is_initialized($1.identifier()))
 			throw semantic_error(@1,
 				"use of uninitialized variable " + $1.identifier());
+		$$ = new ast::name($1);
 	}
 	| func_call { $$ = $1; }
 	| INT_L { $$ = new ast::int_l($1); }
@@ -409,10 +410,9 @@ type
 name
 	: name LBRACKET expression RBRACKET { $1.add_offset($3); $$ = $1; }
 	| IDENTIFIER {
-		//fix type
-		$$ = ast::name($1, * new ast::type(ast::_void));
 		if (!current->is_declared($1))
 			throw semantic_error(@1, "use of undeclared variable " + $1);
+		$$ = ast::name($1, current->get_type($1));
 	}
 	;
 

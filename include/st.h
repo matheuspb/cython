@@ -19,6 +19,7 @@ public:
 	explicit variable(ast::type t) : st_entry{}, t{t} {}
 	void initialize() { initialized = true; }
 	bool is_initialized() { return initialized; }
+	ast::type type() const { return t; }
 
 private:
 	ast::type t;
@@ -75,6 +76,10 @@ public:
 		} else {
 			return false;
 		}
+	}
+
+	ast::type get_type(const std::string& name) const {
+		return dynamic_cast<variable*>(lookup(name))->type();
 	}
 
 	symbol_table* const parent{nullptr};

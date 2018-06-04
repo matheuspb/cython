@@ -353,7 +353,10 @@ public:
 		: name{name}, _t{t}, expression{expression} {}
 	type t() const { return _t; }
 
-	void verify_function_calls() const { expression->verify_function_calls(); }
+	void verify_function_calls() const {
+		if (expression)
+			expression->verify_function_calls();
+	}
 
 private:
 	std::string name;
