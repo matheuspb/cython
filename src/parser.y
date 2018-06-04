@@ -87,7 +87,7 @@ std::list<ast::node*> program;
 /* non-terminal symbols */
 %type <ast::block> inner_block block else
 %type <ast::expr*> expression atom_expr assignment func_call
-%type <ast::node*> line declaration func_declaration 
+%type <ast::node*> line declaration func_declaration
 %type <ast::node*> statement if_stmt for_stmt while_stmt return_stmt
 %type <std::list<ast::elif_stmt>> elif
 %type <ast::name> name
@@ -188,91 +188,91 @@ statement
 
 expression
 	: expression PLUS expression {
-		if (!$1->t().compatible($3->t())) 
+		if (!$1->t().compatible($3->t()))
 			throw semantic_error(@1, "invalid types for sum, only int, float and bool can be on a sum.");
 		ast::type typ = * ($1->t().cast($3->t(), ast::plus));
 		$$ = new ast::binary_operation(ast::plus, $1, $3, typ);
 	}
 	| expression MINUS expression {
-		if (!$1->t().compatible($3->t())) 
+		if (!$1->t().compatible($3->t()))
 			throw semantic_error(@1, "invalid types for subtraction, only int, float and bool can be on substraction.");
 		ast::type typ = * ($1->t().cast($3->t(), ast::minus));
 		$$ = new ast::binary_operation(ast::minus, $1, $3, typ);
 	}
 	| expression TIMES expression {
-		if (!$1->t().compatible($3->t())) 
+		if (!$1->t().compatible($3->t()))
 			throw semantic_error(@1, "invalid types for multiplication, only int, float and bool can be multiplied.");
 		ast::type typ = * ($1->t().cast($3->t(), ast::times));
 		$$ = new ast::binary_operation(ast::times, $1, $3, typ);
 	}
 	| expression DIV expression {
-		if (!$1->t().compatible($3->t())) 
+		if (!$1->t().compatible($3->t()))
 			throw semantic_error(@1, "invalid types for division, only int, float and bool can be divided.");
 		ast::type typ = * ($1->t().cast($3->t(), ast::div));
 		$$ = new ast::binary_operation(ast::div, $1, $3, typ);
 	}
 	| expression EXP expression {
-		if (!$1->t().compatible($3->t())) 
+		if (!$1->t().compatible($3->t()))
 			throw semantic_error(@1, "invalid types for exponential, only int, float and bool can be used for exponential.");
 		ast::type typ = * ($1->t().cast($3->t(), ast::exp));
 		$$ = new ast::binary_operation(ast::exp, $1, $3, typ);
 	}
 	| expression AND expression {
-		if (!$1->t().compatible($3->t())) 
+		if (!$1->t().compatible($3->t()))
 			throw semantic_error(@1, "invalid types for 'AND', only int, float and bool can be used for 'AND' operations.");
 		ast::type typ = * ($1->t().cast($3->t(), ast::_and));
 		$$ = new ast::binary_operation(ast::_and, $1, $3, typ);
 	}
 	| expression OR expression {
-		if (!$1->t().compatible($3->t())) 
+		if (!$1->t().compatible($3->t()))
 			throw semantic_error(@1, "invalid types for 'OR', only int, float and bool can be used for 'OR' operations.");
 		ast::type typ = * ($1->t().cast($3->t(), ast::_or));
 		$$ = new ast::binary_operation(ast::_or, $1, $3, typ);
 	}
-	| NOT expression { 
-		if (!$2->t().compatible()) 
+	| NOT expression {
+		if (!$2->t().compatible())
 			throw semantic_error(@1, "invalid types for 'NOT', only int, float and bool can be used for 'NOT' operations.");
 		ast::type typ = * ($2->t().cast($2->t(), ast::_not));
-		$$ = new ast::unary_operation(ast::_not, $2, typ); 
+		$$ = new ast::unary_operation(ast::_not, $2, typ);
 	}
 	| MINUS expression %prec UMINUS {
-		if (!$2->t().compatible()) 
+		if (!$2->t().compatible())
 			throw semantic_error(@1, "invalid type for 'UMINUS', only int, float and bool can be used for 'UMINUS' operations.");
 		ast::type typ = * ($2->t().cast($2->t(), ast::uminus));
 		$$ = new ast::unary_operation(ast::uminus, $2, typ);
 	}
 	| expression GT expression {
-		if (!$1->t().compatible($3->t())) 
+		if (!$1->t().compatible($3->t()))
 			throw semantic_error(@1, "invalid types for '>', only int, float and bool can be used for '>' operations.");
 		ast::type typ = * ($1->t().cast($3->t(), ast::gt));
 		$$ = new ast::binary_operation(ast::gt, $1, $3, typ);
 	}
 	| expression LT expression {
-		if (!$1->t().compatible($3->t())) 
+		if (!$1->t().compatible($3->t()))
 			throw semantic_error(@1, "invalid types for '<', only int, float and bool can be used for '<' operations.");
 		ast::type typ = * ($1->t().cast($3->t(), ast::lt));
 		$$ = new ast::binary_operation(ast::lt, $1, $3, typ);
 	}
 	| expression GE expression {
-		if (!$1->t().compatible($3->t())) 
+		if (!$1->t().compatible($3->t()))
 			throw semantic_error(@1, "invalid types for '>=', only int, float and bool can be used for '>=' operations.");
 		ast::type typ = * ($1->t().cast($3->t(), ast::ge));
 		$$ = new ast::binary_operation(ast::ge, $1, $3, typ);
 	}
 	| expression LE expression {
-		if (!$1->t().compatible($3->t())) 
+		if (!$1->t().compatible($3->t()))
 			throw semantic_error(@1, "invalid types for '<=', only int, float and bool can be used for '<=' operations.");
 		ast::type typ = * ($1->t().cast($3->t(), ast::le));
 		$$ = new ast::binary_operation(ast::le, $1, $3, typ);
 	}
 	| expression EQ expression {
-		if (!$1->t().compatible($3->t())) 
+		if (!$1->t().compatible($3->t()))
 			throw semantic_error(@1, "invalid types for '==', only int, float and bool can be used for '==' operations.");
 		ast::type typ = * ($1->t().cast($3->t(), ast::eq));
 		$$ = new ast::binary_operation(ast::eq, $1, $3, typ);
 	}
 	| expression NE expression {
-		if (!$1->t().compatible($3->t())) 
+		if (!$1->t().compatible($3->t()))
 			throw semantic_error(@1, "invalid types for '!=', only int, float and bool can be used for '!=' operations.");
 		ast::type typ = * ($1->t().cast($3->t(), ast::ne));
 		$$ = new ast::binary_operation(ast::ne, $1, $3, typ);
@@ -298,7 +298,7 @@ atom_expr
 
 assignment
 	: name ASSIGN expression {
-		if (!$1.t().compat_assign($3->t())) 
+		if (!$1.t().compat_assign($3->t()))
 			throw semantic_error(@1, "invalid type for assignement, expression and name type differ");
 		$$ = new ast::assignment($1, $3, $1.t());
 		current->initialize_variable($1.identifier());
@@ -319,23 +319,23 @@ parameters
 
 if_stmt
 	: IF expression DO inner_block END_T {
-		if (!$2->t().compatible()) 
+		if (!$2->t().compatible())
 			throw semantic_error(@1, "invalid type for if statement, only int, float and bool can be used for if operations.");
 		$$ = new ast::if_stmt(
 			$2, $4, std::list<ast::elif_stmt>(), ast::block());
 	}
 	| IF expression DO inner_block elif END_T {
-		if (!$2->t().compatible()) 
+		if (!$2->t().compatible())
 			throw semantic_error(@1, "invalid type for if statement, only int, float and bool can be used for if operations.");
 		$$ = new ast::if_stmt($2, $4, $5, ast::block());
 	}
 	| IF expression DO inner_block else END_T {
-		if (!$2->t().compatible()) 
+		if (!$2->t().compatible())
 			throw semantic_error(@1, "Invalid type for if statement, only int, float and bool can be used for if operations.");
 		$$ = new ast::if_stmt($2, $4, std::list<ast::elif_stmt>(), $5);
 	}
 	| IF expression DO inner_block elif else END_T {
-		if (!$2->t().compatible()) 
+		if (!$2->t().compatible())
 			throw semantic_error(@1, "invalid type for if statement, only int, float and bool can be used for if operations.");
 		$$ = new ast::if_stmt($2, $4, $5, $6);
 	}
@@ -343,13 +343,13 @@ if_stmt
 
 elif
 	: elif ELIF expression inner_block {
-		if (!$3->t().compatible()) 
+		if (!$3->t().compatible())
 			throw semantic_error(@1, "invalid type for if statement, only int, float and bool can be used for if operations.");
 		$1.push_back(ast::elif_stmt($3, $4));
 		$$ = $1;
 	}
 	| ELIF expression inner_block {
-		if (!$2->t().compatible()) 
+		if (!$2->t().compatible())
 			throw semantic_error(@1, "invalid type for if statement, only int, float and bool can be used for if operations.");
 		$$ = {ast::elif_stmt($2, $3)};
 	}
@@ -369,8 +369,8 @@ for_stmt
 	;
 
 while_stmt
-	: WHILE expression block { 
-		if (!$2->t().compatible()) 
+	: WHILE expression block {
+		if (!$2->t().compatible())
 			throw semantic_error(@1, "Invalid type for if statement, only int, float and bool can be used for if operations.");
 		$$ = new ast::while_stmt($2, $3); }
 	;
