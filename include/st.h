@@ -28,10 +28,10 @@ private:
 
 class function : public st_entry {
 public:
-	explicit function(ast::func* declaration) : declaration{declaration} {}
+	explicit function(ast::func* declaration)
+		: st_entry{}, declaration{declaration} {}
 
-private:
-	ast::func* declaration;
+	const ast::func* declaration;
 };
 
 class symbol_table {

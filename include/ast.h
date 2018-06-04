@@ -1,9 +1,9 @@
 #ifndef AST_H
 #define AST_H
 
-#include <list>
 #include <location.hh>
 #include <string>
+#include <vector>
 
 namespace ast {
 
@@ -49,7 +49,7 @@ public:
 	}
 
 private:
-	std::list<node*> lines;
+	std::vector<node*> lines;
 };
 
 class type {
@@ -118,8 +118,8 @@ public:
 	_type t() const { return _t; }
 
 private:
-	_type _t{_void};
-	std::list<unsigned int> dimensions;
+	_type _t{_int};
+	std::vector<unsigned int> dimensions;
 };
 
 class expr : public node {
@@ -177,7 +177,7 @@ public:
 private:
 	std::string _identifier;
 	type _t;
-	std::list<node*> offsets;
+	std::vector<node*> offsets;
 };
 
 class assignment : public expr {
@@ -214,7 +214,7 @@ class if_stmt : public node {
 public:
 	if_stmt() = default;
 	if_stmt(
-		node* cond, block if_block, std::list<elif_stmt> elif_stmts,
+		node* cond, block if_block, std::vector<elif_stmt> elif_stmts,
 		block else_block)
 		: node{}
 		, cond{cond}
@@ -233,7 +233,7 @@ public:
 private:
 	node* cond;
 	block if_block;
-	std::list<elif_stmt> elif_stmts;
+	std::vector<elif_stmt> elif_stmts;
 	block else_block;
 };
 
@@ -364,19 +364,21 @@ private:
 	node* expression;
 };
 
-class func : public expr {
+class func : public node {
 public:
-	func(std::string name, std::list<arg> args, type t, block code)
+	func(std::string name, std::vector<arg> args, type t, block code)
 		: name{name}, args{args}, _t{t}, code{code} {}
 	func(std::string name, type t, block code)
 		: name{name}, _t{t}, code{code} {}
+
 	type t() const { return _t; }
 
 	void verify_function_calls() const { code.verify_function_calls(); }
 
+	const std::vector<arg> args;
+
 private:
 	std::string name;
-	std::list<arg> args;
 	type _t;
 	block code;
 };
@@ -384,7 +386,7 @@ private:
 class func_call : public expr {
 public:
 	func_call(
-		std::string name, std::list<node*> parameters, yy::location location)
+		std::string name, std::vector<expr*> parameters, yy::location location)
 		: expr{}, name{name}, parameters{parameters}, location{location} {}
 	func_call(std::string name, yy::location location)
 		: expr{}, name{name}, location{location} {}
@@ -394,12 +396,13 @@ public:
 	/* check if the called function exists in the symbol table */
 	void verify_function_calls() const;
 
-	type t() const { return _t; }
+	type t() const { /*TODO fix stub impl*/
+		return type();
+	}
 
 private:
 	std::string name;
-	type _t;
-	std::list<node*> parameters;
+	std::vector<expr*> parameters;
 	yy::location location;
 };
 

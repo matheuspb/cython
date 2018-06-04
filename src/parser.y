@@ -11,7 +11,7 @@
 %code requires
 {
 #include <string>
-#include <list>
+#include <vector>
 #include <errors.h>
 #include <ast.h>
 #include <st.h>
@@ -25,7 +25,7 @@ extern void yypop_buffer_state();
 
 /* current symbol table being used during parsing */
 st::symbol_table* current = new st::symbol_table;
-std::list<ast::node*> program;
+std::vector<ast::node*> program;
 }
 
 /* terminal symbols */
@@ -89,12 +89,12 @@ std::list<ast::node*> program;
 %type <ast::expr*> expression atom_expr assignment func_call
 %type <ast::node*> line declaration func_declaration
 %type <ast::node*> statement if_stmt for_stmt while_stmt return_stmt
-%type <std::list<ast::elif_stmt>> elif
+%type <std::vector<ast::elif_stmt>> elif
 %type <ast::name> name
 %type <ast::arg> arg
 %type <ast::type> type
-%type <std::list<ast::arg>> args_list
-%type <std::list<ast::node*>> parameters
+%type <std::vector<ast::arg>> args_list
+%type <std::vector<ast::expr*>> parameters
 
 /* precedence */
 %right ASSIGN
@@ -322,7 +322,7 @@ if_stmt
 		if (!$2->t().compatible())
 			throw semantic_error(@1, "invalid type for if statement, only int, float and bool can be used for if operations.");
 		$$ = new ast::if_stmt(
-			$2, $4, std::list<ast::elif_stmt>(), ast::block());
+			$2, $4, std::vector<ast::elif_stmt>(), ast::block());
 	}
 	| IF expression DO inner_block elif END_T {
 		if (!$2->t().compatible())
@@ -332,7 +332,7 @@ if_stmt
 	| IF expression DO inner_block else END_T {
 		if (!$2->t().compatible())
 			throw semantic_error(@1, "Invalid type for if statement, only int, float and bool can be used for if operations.");
-		$$ = new ast::if_stmt($2, $4, std::list<ast::elif_stmt>(), $5);
+		$$ = new ast::if_stmt($2, $4, std::vector<ast::elif_stmt>(), $5);
 	}
 	| IF expression DO inner_block elif else END_T {
 		if (!$2->t().compatible())
