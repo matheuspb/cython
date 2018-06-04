@@ -24,6 +24,8 @@ enum operation {
 	uminus
 };
 
+enum _type { _int, _float, _char, _void, _bool };
+
 class node {
 public:
 	node() = default;
@@ -41,7 +43,6 @@ private:
 
 class type : public node {
 public:
-	enum _type { _int, _float, _char, _void, _bool };
 
 	type() = default;
 	explicit type(_type t) : node{}, _t{t} {}
@@ -56,6 +57,15 @@ public:
 	bool compatible() {
 			if (_t == _int || _t == _float || _t == _bool)
 				return true;
+			return false;
+	}
+	bool compat_assign(type second) {
+			if (_t == second.t())
+				return true;
+			if (_t == _int || _t == _float || _t == _bool)
+				if (second.t() == _int || second.t() == _float 
+					|| second.t() == _bool)
+					return true;
 			return false;
 	}
 	type* cast(type second, operation oper) {
@@ -101,7 +111,7 @@ public:
 
 class binary_operation : public expr {
 public:
-	binary_operation(operation op, type t, node* left, node* right)
+	binary_operation(operation op, node* left, node* right, type t)
 		: op{op}, _t{t}, left{left}, right{right} {}
 	type t() const { return _t; }
 
@@ -114,7 +124,7 @@ private:
 
 class unary_operation : public expr {
 public:
-	unary_operation(operation op, type t, node* operand)
+	unary_operation(operation op, node* operand, type t)
 		: op{op}, _t{t}, operand{operand} {}
 	type t() const { return _t; }
 
@@ -134,22 +144,22 @@ public:
 	type t() const { return _t; }
 
 private:
-	type _t;
 	std::string _identifier;
+	type _t;
 	std::list<node*> offsets;
 };
 
 class assignment : public expr {
 public:
 	assignment() = default;
-	assignment(name variable, type t, node* expression)
-		: variable{variable}, _t(t), expression{expression} {}
+	assignment(name variable, node* expression, type t)
+		: variable{variable}, expression{expression}, _t(t) {}
 	type t() const { return _t; }	
 
 private:
-	type _t;
 	name variable;
 	node* expression;
+	type _t;
 };
 
 class elif_stmt : public node {
@@ -217,7 +227,7 @@ private:
 class int_l : public expr {
 public:
 	explicit int_l(int value) : value{value} {
-		_t = new type(_int);
+		_t = * new type(_int);
 	}
 	type t() const { return _t; }
 
@@ -229,7 +239,7 @@ private:
 class float_l : public expr {
 public:
 	explicit float_l(double value) : value{value} {
-		_t = new type(_float);
+		_t = * new type(_float);
 	}
 	type t() const { return _t; }
 
@@ -241,7 +251,7 @@ private:
 class string_l : public expr {
 public:
 	explicit string_l(std::string str) : str{str} {
-		_t = new type(_char);
+		_t = * new type(_char);
 	}
 	type t() const { return _t; }
 
@@ -253,7 +263,7 @@ private:
 class bool_l : public expr {
 public:
 	explicit bool_l(bool b) : b{b} {
-		_t = new type(_bool);
+		_t = * new type(_bool);
 	}
 	type t() const { return _t; }
 
@@ -304,7 +314,7 @@ private:
 
 class func_call : public expr {
 public:
-	func_call(std::string name, type t, std::list<node*> parameters)
+	func_call(std::string name, std::list<node*> parameters, type t)
 		: name{name}, _t(t), parameters{parameters} {}
 	func_call(std::string name, type t) : name{name}, _t(t) {}
 	type t() const { return _t; }
