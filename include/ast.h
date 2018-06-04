@@ -54,60 +54,67 @@ private:
 
 class type {
 public:
-
 	type() = default;
 	explicit type(_type t) : _t{t} {}
+
 	void add_dimension(unsigned int size) { dimensions.push_back(size); }
+
 	bool compatible(type second) {
 		if (_t == _int || _t == _float || _t == _bool) {
-			if (second.t() == _int || second.t() == _float || second.t() == _bool)
+			if (second.t() == _int || second.t() == _float ||
+				second.t() == _bool)
 				return true;
 		}
 		return false;
 	}
+
 	bool compatible() {
-			if (_t == _int || _t == _float || _t == _bool)
-				return true;
-			return false;
+		if (_t == _int || _t == _float || _t == _bool)
+			return true;
+		return false;
 	}
+
 	bool compat_assign(type second) {
-			if (_t == second.t())
+		if (_t == second.t())
+			return true;
+		if (_t == _int || _t == _float || _t == _bool)
+			if (second.t() == _int || second.t() == _float ||
+				second.t() == _bool)
 				return true;
-			if (_t == _int || _t == _float || _t == _bool)
-				if (second.t() == _int || second.t() == _float 
-					|| second.t() == _bool)
-					return true;
-			return false;
+		return false;
 	}
+
 	type* cast(type second, operation oper) {
 		switch (oper) {
-			case minus :
-			case times :
-			case div :
-			case plus :
-			case exp :
-				if (second.t() == _float || t() == _float)
-					return new type(_float);
-				else return new type(_int);
+		case minus:
+		case times:
+		case div:
+		case plus:
+		case exp:
+			if (second.t() == _float || t() == _float)
+				return new type(_float);
+			else
+				return new type(_int);
 
-			case _and :
-			case _or :
-			case gt :
-			case lt :
-			case ge :
-			case le :
-			case eq :
-			case ne :
-			case _not :
-				return new type(_bool);
+		case _and:
+		case _or:
+		case gt:
+		case lt:
+		case ge:
+		case le:
+		case eq:
+		case ne:
+		case _not:
+			return new type(_bool);
 
-			case uminus :
-				return new type(t());
+		case uminus:
+			return new type(t());
 
-			default:
-				return new type(_void);
+		default:
+			return new type(_void);
 		}
 	}
+
 	_type t() const { return _t; }
 
 private:
@@ -155,8 +162,8 @@ private:
 class name : public expr {
 public:
 	name() = default;
-	explicit name(std::string identifier, type t) 
-		: 	_identifier{identifier}, _t(t) {}
+	explicit name(std::string identifier, type t)
+		: _identifier{identifier}, _t(t) {}
 	void add_offset(node* offset) { offsets.push_back(offset); }
 
 	std::string identifier() const { return _identifier; }
@@ -178,7 +185,7 @@ public:
 	assignment() = default;
 	assignment(name variable, node* expression, type t)
 		: variable{variable}, expression{expression}, _t(t) {}
-	type t() const { return _t; }	
+	type t() const { return _t; }
 
 	void verify_function_calls() const { expression->verify_function_calls(); }
 
@@ -279,9 +286,7 @@ private:
 
 class int_l : public expr {
 public:
-	explicit int_l(int value) : value{value} {
-		_t = * new type(_int);
-	}
+	explicit int_l(int value) : value{value} { _t = *new type(_int); }
 	type t() const { return _t; }
 
 	void verify_function_calls() const {}
@@ -293,9 +298,7 @@ private:
 
 class float_l : public expr {
 public:
-	explicit float_l(double value) : value{value} {
-		_t = * new type(_float);
-	}
+	explicit float_l(double value) : value{value} { _t = *new type(_float); }
 	type t() const { return _t; }
 
 	void verify_function_calls() const {}
@@ -307,9 +310,7 @@ private:
 
 class string_l : public expr {
 public:
-	explicit string_l(std::string str) : str{str} {
-		_t = * new type(_char);
-	}
+	explicit string_l(std::string str) : str{str} { _t = *new type(_char); }
 	type t() const { return _t; }
 
 	void verify_function_calls() const {}
@@ -321,9 +322,7 @@ private:
 
 class bool_l : public expr {
 public:
-	explicit bool_l(bool b) : b{b} {
-		_t = * new type(_bool);
-	}
+	explicit bool_l(bool b) : b{b} { _t = *new type(_bool); }
 	type t() const { return _t; }
 
 	void verify_function_calls() const {}
