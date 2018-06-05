@@ -2,6 +2,7 @@
 #define AST_H
 
 #include <location.hh>
+#include <errors.h>
 #include <string>
 #include <vector>
 
@@ -33,7 +34,7 @@ public:
 	virtual ~node() = default;
 
 	/* do semantic verifications on function calls */
-	virtual void verify_function_calls() const = 0;
+	virtual void verify_semantic() = 0;
 };
 
 class block : public node {
@@ -43,9 +44,9 @@ public:
 
 	void add_line(node* line) { lines.push_back(line); }
 
-	void verify_function_calls() const {
+	void verify_semantic() {
 		for (auto line : lines)
-			line->verify_function_calls();
+			line->verify_semantic();
 	}
 
 private:
@@ -129,34 +130,45 @@ public:
 
 class binary_operation : public expr {
 public:
-	binary_operation(operation op, node* left, node* right, type t)
-		: op{op}, _t{t}, left{left}, right{right} {}
+	binary_operation(operation op, expr* left, expr* right, yy::location loc)
+		: op{op}, left{left}, right{right}, loc{loc} {}
 	type t() const { return _t; }
 
-	void verify_function_calls() const {
-		left->verify_function_calls();
-		right->verify_function_calls();
+	void verify_semantic() {
+		left->verify_semantic();
+		right->verify_semantic();
+
+		if (!left->t().compatible(right->t()))
+			throw semantic_error(yy::location(), "invalid types for operation");
+		_t = *(left->t().cast(right->t(), op));
 	}
 
 private:
 	operation op;
 	type _t;
-	node* left;
-	node* right;
+	expr* left;
+	expr* right;
+	yy::location loc;
 };
 
 class unary_operation : public expr {
 public:
-	unary_operation(operation op, node* operand, type t)
-		: op{op}, _t{t}, operand{operand} {}
+	unary_operation(operation op, expr* operand, yy::location loc)
+		: op{op}, operand{operand}, loc{loc} {}
 	type t() const { return _t; }
 
-	void verify_function_calls() const { operand->verify_function_calls(); }
+	void verify_semantic() {
+		operand->verify_semantic();
+		if (!operand->t().compatible())
+			throw semantic_error(yy::location(), "invalid types for operation");
+		_t = * (operand->t().cast(operand->t(), op));
+	}
 
 private:
 	operation op;
 	type _t;
-	node* operand;
+	expr* operand;
+	yy::location loc;
 };
 
 class name : public expr {
@@ -169,9 +181,9 @@ public:
 	std::string identifier() const { return _identifier; }
 	type t() const { return _t; }
 
-	void verify_function_calls() const {
+	void verify_semantic() {
 		for (auto offset : offsets)
-			offset->verify_function_calls();
+			offset->verify_semantic();
 	}
 
 private:
@@ -183,30 +195,38 @@ private:
 class assignment : public expr {
 public:
 	assignment() = default;
-	assignment(name variable, node* expression, type t)
+	assignment(name variable, expr* expression, type t)
 		: variable{variable}, expression{expression}, _t(t) {}
 	type t() const { return _t; }
 
-	void verify_function_calls() const { expression->verify_function_calls(); }
+	void verify_semantic() {
+		expression->verify_semantic();
+		if (!_t.compat_assign(expression->t()))
+			throw semantic_error(yy::location(), "invalid type for assignment, "
+				"expression and name type differ");
+	}
 
 private:
 	name variable;
-	node* expression;
+	expr* expression;
 	type _t;
 };
 
 class elif_stmt : public node {
 public:
-	elif_stmt(node* cond, block elif_block)
+	elif_stmt(expr* cond, block elif_block)
 		: node{}, cond{cond}, elif_block{elif_block} {}
 
-	void verify_function_calls() const {
-		cond->verify_function_calls();
-		elif_block.verify_function_calls();
+	void verify_semantic() {
+		cond->verify_semantic();
+		elif_block.verify_semantic();
+		if (!cond->t().compatible())
+			throw semantic_error(yy::location(), "invalid type for if statement"
+				", only int, float and bool can be used for if operations.");
 	}
 
 private:
-	node* cond;
+	expr* cond;
 	block elif_block;
 };
 
@@ -214,7 +234,7 @@ class if_stmt : public node {
 public:
 	if_stmt() = default;
 	if_stmt(
-		node* cond, block if_block, std::vector<elif_stmt> elif_stmts,
+		expr* cond, block if_block, std::vector<elif_stmt> elif_stmts,
 		block else_block)
 		: node{}
 		, cond{cond}
@@ -222,16 +242,19 @@ public:
 		, elif_stmts{elif_stmts}
 		, else_block{else_block} {}
 
-	void verify_function_calls() const {
-		cond->verify_function_calls();
-		if_block.verify_function_calls();
+	void verify_semantic() {
+		cond->verify_semantic();
+		if_block.verify_semantic();
 		for (auto elif : elif_stmts)
-			elif.verify_function_calls();
-		else_block.verify_function_calls();
+			elif.verify_semantic();
+		else_block.verify_semantic();
+		if (!cond->t().compatible())
+			throw semantic_error(yy::location(), "invalid type for if statement"
+				", only int, float and bool can be used for if operations.");
 	}
 
 private:
-	node* cond;
+	expr* cond;
 	block if_block;
 	std::vector<elif_stmt> elif_stmts;
 	block else_block;
@@ -240,19 +263,23 @@ private:
 class for_stmt : public node {
 public:
 	for_stmt() = default;
-	for_stmt(node* init, node* condition, node* step, block code)
+	for_stmt(node* init, expr* condition, node* step, block code)
 		: node{}, init{init}, condition{condition}, step{step}, code{code} {}
 
-	void verify_function_calls() const {
-		init->verify_function_calls();
-		condition->verify_function_calls();
-		step->verify_function_calls();
-		code.verify_function_calls();
+	void verify_semantic() {
+		init->verify_semantic();
+		condition->verify_semantic();
+		step->verify_semantic();
+		code.verify_semantic();
+		if (!condition->t().compatible())
+			throw semantic_error(yy::location(), "Invalid type for condition"
+				" statement, only int, float and bool"
+				" can be used for conditions.");
 	}
 
 private:
 	node* init;
-	node* condition;
+	expr* condition;
 	node* step;
 	block code;
 };
@@ -260,12 +287,12 @@ private:
 class while_stmt : public node {
 public:
 	while_stmt() = default;
-	while_stmt(node* condition, block code)
+	while_stmt(expr* condition, block code)
 		: condition{condition}, code{code} {}
 
-	void verify_function_calls() const {
-		condition->verify_function_calls();
-		code.verify_function_calls();
+	void verify_semantic() {
+		condition->verify_semantic();
+		code.verify_semantic();
 	}
 
 private:
@@ -278,7 +305,7 @@ public:
 	return_stmt() = default;
 	return_stmt(node* expression) : expression{expression} {}
 
-	void verify_function_calls() const { expression->verify_function_calls(); }
+	void verify_semantic() { expression->verify_semantic(); }
 
 private:
 	node* expression;
@@ -289,7 +316,7 @@ public:
 	explicit int_l(int value) : value{value} { _t = *new type(_int); }
 	type t() const { return _t; }
 
-	void verify_function_calls() const {}
+	void verify_semantic() {}
 
 private:
 	type _t;
@@ -301,7 +328,7 @@ public:
 	explicit float_l(double value) : value{value} { _t = *new type(_float); }
 	type t() const { return _t; }
 
-	void verify_function_calls() const {}
+	void verify_semantic() {}
 
 private:
 	type _t;
@@ -313,7 +340,7 @@ public:
 	explicit string_l(std::string str) : str{str} { _t = *new type(_char); }
 	type t() const { return _t; }
 
-	void verify_function_calls() const {}
+	void verify_semantic() {}
 
 private:
 	type _t;
@@ -325,7 +352,7 @@ public:
 	explicit bool_l(bool b) : b{b} { _t = *new type(_bool); }
 	type t() const { return _t; }
 
-	void verify_function_calls() const {}
+	void verify_semantic() {}
 
 private:
 	type _t;
@@ -339,7 +366,7 @@ public:
 		: identifier{identifier}, _t{t}, reference{reference} {}
 	type t() const { return _t; }
 
-	void verify_function_calls() const {}
+	void verify_semantic() {}
 
 private:
 	std::string identifier;
@@ -353,9 +380,9 @@ public:
 		: name{name}, _t{t}, expression{expression} {}
 	type t() const { return _t; }
 
-	void verify_function_calls() const {
+	void verify_semantic() {
 		if (expression)
-			expression->verify_function_calls();
+			expression->verify_semantic();
 	}
 
 private:
@@ -373,7 +400,7 @@ public:
 
 	type t() const { return _t; }
 
-	void verify_function_calls() const { code.verify_function_calls(); }
+	void verify_semantic() { code.verify_semantic(); }
 
 	const std::vector<arg> args;
 
@@ -394,11 +421,9 @@ public:
 	const std::string& func_name() const { return name; }
 
 	/* check if the called function exists in the symbol table */
-	void verify_function_calls() const;
+	void verify_semantic();
 
-	type t() const { /*TODO fix stub impl*/
-		return type();
-	}
+	type t() const;
 
 private:
 	std::string name;

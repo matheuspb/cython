@@ -3,13 +3,13 @@
 
 extern st::symbol_table* current;
 
-void ast::func_call::verify_function_calls() const {
+void ast::func_call::verify_semantic() {
 	/* verify if the function exists */
 	if (current->lookup(name) == nullptr)
 		throw semantic_error(location, "calling unknown function " + name);
 
 	for (auto parameter : parameters)
-		parameter->verify_function_calls();
+		parameter->verify_semantic();
 
 	/* parameters type checking */
 	const ast::func* func_declaration =
@@ -21,4 +21,8 @@ void ast::func_call::verify_function_calls() const {
 	for (auto i = 0u; i < parameters.size(); i++)
 		if (func_declaration->args[i].t().t() != parameters[i]->t().t())
 			throw semantic_error(location, "invalid parameter type");
+}
+
+ast::type ast::func_call::t() const {
+	return current->get_function_return_type(name);
 }
