@@ -151,7 +151,7 @@ declaration
 func_declaration
 	: DEF IDENTIFIER start_scope LPAREN args_list RPAREN
 			ARROW type block end_scope nl {
-		auto node = new ast::func($2, $5, $8, $9);
+		auto node = new ast::func($5, $2, $8, $9);
 		$$ = node;
 		if (!current->insert_function($2, node))
 			throw semantic_error(@1, "function " + $2 + " already defined");

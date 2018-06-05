@@ -1,8 +1,8 @@
 #ifndef AST_H
 #define AST_H
 
-#include <location.hh>
 #include <errors.h>
+#include <location.hh>
 #include <string>
 #include <vector>
 
@@ -60,7 +60,7 @@ public:
 
 	void add_dimension(unsigned int size) { dimensions.push_back(size); }
 
-	bool compatible(type second) {
+	bool compatible(type second) const {
 		if (_t == _int || _t == _float || _t == _bool) {
 			if (second.t() == _int || second.t() == _float ||
 				second.t() == _bool)
@@ -69,13 +69,13 @@ public:
 		return false;
 	}
 
-	bool compatible() {
+	bool compatible() const {
 		if (_t == _int || _t == _float || _t == _bool)
 			return true;
 		return false;
 	}
 
-	bool compat_assign(type second) {
+	bool compat_assign(type second) const {
 		if (_t == second.t())
 			return true;
 		if (_t == _int || _t == _float || _t == _bool)
@@ -85,7 +85,7 @@ public:
 		return false;
 	}
 
-	type* cast(type second, operation oper) {
+	type* cast(type second, operation oper) const {
 		switch (oper) {
 		case minus:
 		case times:
@@ -161,7 +161,7 @@ public:
 		operand->verify_semantic();
 		if (!operand->t().compatible())
 			throw semantic_error(yy::location(), "invalid types for operation");
-		_t = * (operand->t().cast(operand->t(), op));
+		_t = *(operand->t().cast(operand->t(), op));
 	}
 
 private:
@@ -174,8 +174,7 @@ private:
 class name : public expr {
 public:
 	name() = default;
-	explicit name(std::string identifier, type t)
-		: _identifier{identifier}, _t(t) {}
+	name(std::string identifier, type t) : _identifier{identifier}, _t(t) {}
 	void add_offset(node* offset) { offsets.push_back(offset); }
 
 	std::string identifier() const { return _identifier; }
@@ -202,8 +201,9 @@ public:
 	void verify_semantic() {
 		expression->verify_semantic();
 		if (!_t.compat_assign(expression->t()))
-			throw semantic_error(yy::location(), "invalid type for assignment, "
-				"expression and name type differ");
+			throw semantic_error(
+				yy::location(), "invalid type for assignment, "
+								"expression and name type differ");
 	}
 
 private:
@@ -221,7 +221,9 @@ public:
 		cond->verify_semantic();
 		elif_block.verify_semantic();
 		if (!cond->t().compatible())
-			throw semantic_error(yy::location(), "invalid type for if statement"
+			throw semantic_error(
+				yy::location(),
+				"invalid type for if statement"
 				", only int, float and bool can be used for if operations.");
 	}
 
@@ -249,7 +251,9 @@ public:
 			elif.verify_semantic();
 		else_block.verify_semantic();
 		if (!cond->t().compatible())
-			throw semantic_error(yy::location(), "invalid type for if statement"
+			throw semantic_error(
+				yy::location(),
+				"invalid type for if statement"
 				", only int, float and bool can be used for if operations.");
 	}
 
@@ -272,9 +276,10 @@ public:
 		step->verify_semantic();
 		code.verify_semantic();
 		if (!condition->t().compatible())
-			throw semantic_error(yy::location(), "Invalid type for condition"
-				" statement, only int, float and bool"
-				" can be used for conditions.");
+			throw semantic_error(
+				yy::location(), "Invalid type for condition"
+								" statement, only int, float and bool"
+								" can be used for conditions.");
 	}
 
 private:
@@ -303,7 +308,7 @@ private:
 class return_stmt : public node {
 public:
 	return_stmt() = default;
-	return_stmt(node* expression) : expression{expression} {}
+	explicit return_stmt(node* expression) : expression{expression} {}
 
 	void verify_semantic() { expression->verify_semantic(); }
 
@@ -314,6 +319,7 @@ private:
 class int_l : public expr {
 public:
 	explicit int_l(int value) : value{value} { _t = *new type(_int); }
+
 	type t() const { return _t; }
 
 	void verify_semantic() {}
@@ -326,6 +332,7 @@ private:
 class float_l : public expr {
 public:
 	explicit float_l(double value) : value{value} { _t = *new type(_float); }
+
 	type t() const { return _t; }
 
 	void verify_semantic() {}
@@ -338,6 +345,7 @@ private:
 class string_l : public expr {
 public:
 	explicit string_l(std::string str) : str{str} { _t = *new type(_char); }
+
 	type t() const { return _t; }
 
 	void verify_semantic() {}
@@ -350,6 +358,7 @@ private:
 class bool_l : public expr {
 public:
 	explicit bool_l(bool b) : b{b} { _t = *new type(_bool); }
+
 	type t() const { return _t; }
 
 	void verify_semantic() {}
@@ -364,6 +373,7 @@ public:
 	arg() = default;
 	arg(std::string identifier, type t, bool reference)
 		: identifier{identifier}, _t{t}, reference{reference} {}
+
 	type t() const { return _t; }
 
 	void verify_semantic() {}
@@ -378,6 +388,7 @@ class declaration : public expr {
 public:
 	declaration(std::string name, type t, node* expression)
 		: name{name}, _t{t}, expression{expression} {}
+
 	type t() const { return _t; }
 
 	void verify_semantic() {
@@ -393,8 +404,8 @@ private:
 
 class func : public node {
 public:
-	func(std::string name, std::vector<arg> args, type t, block code)
-		: name{name}, args{args}, _t{t}, code{code} {}
+	func(std::vector<arg> args, std::string name, type t, block code)
+		: args{args}, name{name}, _t{t}, code{code} {}
 	func(std::string name, type t, block code)
 		: name{name}, _t{t}, code{code} {}
 
