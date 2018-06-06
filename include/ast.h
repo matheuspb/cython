@@ -60,7 +60,7 @@ public:
 
 	void add_dimension(unsigned int size) { dimensions.push_back(size); }
 
-	bool compatible(type second) const {
+	bool compatible(const type& second) const {
 		if (_t == _int || _t == _float || _t == _bool) {
 			if (second.t() == _int || second.t() == _float ||
 				second.t() == _bool)
@@ -75,7 +75,7 @@ public:
 		return false;
 	}
 
-	bool compat_assign(type second) const {
+	bool compat_assign(const type& second) const {
 		if (_t == second.t())
 			return true;
 		if (_t == _int || _t == _float || _t == _bool)
@@ -85,7 +85,7 @@ public:
 		return false;
 	}
 
-	type* cast(type second, operation oper) const {
+	type cast(const type& second, const operation& oper) const {
 		switch (oper) {
 		case minus:
 		case times:
@@ -93,9 +93,9 @@ public:
 		case plus:
 		case exp:
 			if (second.t() == _float || t() == _float)
-				return new type(_float);
+				return type(_float);
 			else
-				return new type(_int);
+				return type(_int);
 
 		case _and:
 		case _or:
@@ -106,13 +106,13 @@ public:
 		case eq:
 		case ne:
 		case _not:
-			return new type(_bool);
+			return type(_bool);
 
 		case uminus:
-			return new type(t());
+			return type(t());
 
 		default:
-			return new type(_void);
+			return type(_void);
 		}
 	}
 
@@ -125,14 +125,16 @@ private:
 
 class expr : public node {
 public:
-	virtual type t() const = 0;
+	virtual const type& t() const = 0;
 };
 
 class binary_operation : public expr {
 public:
-	binary_operation(operation op, expr* left, expr* right, yy::location loc)
+	binary_operation(
+		const operation& op, expr* left, expr* right, const yy::location& loc)
 		: op{op}, left{left}, right{right}, loc{loc} {}
-	type t() const { return _t; }
+
+	const type& t() const { return _t; }
 
 	void verify_semantic() {
 		left->verify_semantic();
@@ -140,7 +142,7 @@ public:
 
 		if (!left->t().compatible(right->t()))
 			throw semantic_error(yy::location(), "invalid types for operation");
-		_t = *(left->t().cast(right->t(), op));
+		_t = left->t().cast(right->t(), op);
 	}
 
 private:
@@ -153,15 +155,15 @@ private:
 
 class unary_operation : public expr {
 public:
-	unary_operation(operation op, expr* operand, yy::location loc)
+	unary_operation(const operation& op, expr* operand, const yy::location& loc)
 		: op{op}, operand{operand}, loc{loc} {}
-	type t() const { return _t; }
+	const type& t() const { return _t; }
 
 	void verify_semantic() {
 		operand->verify_semantic();
 		if (!operand->t().compatible())
 			throw semantic_error(yy::location(), "invalid types for operation");
-		_t = *(operand->t().cast(operand->t(), op));
+		_t = operand->t().cast(operand->t(), op);
 	}
 
 private:
@@ -174,11 +176,13 @@ private:
 class name : public expr {
 public:
 	name() = default;
-	name(std::string identifier, type t) : _identifier{identifier}, _t(t) {}
+	name(const std::string& identifier, const type& t)
+		: _identifier{identifier}, _t(t) {}
 	void add_offset(node* offset) { offsets.push_back(offset); }
 
-	std::string identifier() const { return _identifier; }
-	type t() const { return _t; }
+	const std::string& identifier() const { return _identifier; }
+
+	const type& t() const { return _t; }
 
 	void verify_semantic() {
 		for (auto offset : offsets)
@@ -194,9 +198,10 @@ private:
 class assignment : public expr {
 public:
 	assignment() = default;
-	assignment(name variable, expr* expression, type t)
+	assignment(const name& variable, expr* expression, const type& t)
 		: variable{variable}, expression{expression}, _t(t) {}
-	type t() const { return _t; }
+
+	const type& t() const { return _t; }
 
 	void verify_semantic() {
 		expression->verify_semantic();
@@ -214,7 +219,7 @@ private:
 
 class elif_stmt : public node {
 public:
-	elif_stmt(expr* cond, block elif_block)
+	elif_stmt(expr* cond, const block& elif_block)
 		: node{}, cond{cond}, elif_block{elif_block} {}
 
 	void verify_semantic() {
@@ -236,8 +241,8 @@ class if_stmt : public node {
 public:
 	if_stmt() = default;
 	if_stmt(
-		expr* cond, block if_block, std::vector<elif_stmt> elif_stmts,
-		block else_block)
+		expr* cond, const block& if_block,
+		const std::vector<elif_stmt>& elif_stmts, const block& else_block)
 		: node{}
 		, cond{cond}
 		, if_block{if_block}
@@ -267,7 +272,7 @@ private:
 class for_stmt : public node {
 public:
 	for_stmt() = default;
-	for_stmt(node* init, expr* condition, node* step, block code)
+	for_stmt(node* init, expr* condition, node* step, const block& code)
 		: node{}, init{init}, condition{condition}, step{step}, code{code} {}
 
 	void verify_semantic() {
@@ -292,7 +297,7 @@ private:
 class while_stmt : public node {
 public:
 	while_stmt() = default;
-	while_stmt(expr* condition, block code)
+	while_stmt(expr* condition, const block& code)
 		: condition{condition}, code{code} {}
 
 	void verify_semantic() {
@@ -318,9 +323,9 @@ private:
 
 class int_l : public expr {
 public:
-	explicit int_l(int value) : value{value} { _t = *new type(_int); }
+	explicit int_l(int value) : value{value} { _t = type(_int); }
 
-	type t() const { return _t; }
+	const type& t() const { return _t; }
 
 	void verify_semantic() {}
 
@@ -331,9 +336,9 @@ private:
 
 class float_l : public expr {
 public:
-	explicit float_l(double value) : value{value} { _t = *new type(_float); }
+	explicit float_l(double value) : value{value} { _t = type(_float); }
 
-	type t() const { return _t; }
+	const type& t() const { return _t; }
 
 	void verify_semantic() {}
 
@@ -344,9 +349,9 @@ private:
 
 class string_l : public expr {
 public:
-	explicit string_l(std::string str) : str{str} { _t = *new type(_char); }
+	explicit string_l(const std::string& str) : str{str} { _t = type(_char); }
 
-	type t() const { return _t; }
+	const type& t() const { return _t; }
 
 	void verify_semantic() {}
 
@@ -357,9 +362,9 @@ private:
 
 class bool_l : public expr {
 public:
-	explicit bool_l(bool b) : b{b} { _t = *new type(_bool); }
+	explicit bool_l(bool b) : b{b} { _t = type(_bool); }
 
-	type t() const { return _t; }
+	const type& t() const { return _t; }
 
 	void verify_semantic() {}
 
@@ -371,10 +376,10 @@ private:
 class arg : public expr {
 public:
 	arg() = default;
-	arg(std::string identifier, type t, bool reference)
+	arg(const std::string& identifier, const type& t, bool reference)
 		: identifier{identifier}, _t{t}, reference{reference} {}
 
-	type t() const { return _t; }
+	const type& t() const { return _t; }
 
 	void verify_semantic() {}
 
@@ -386,10 +391,10 @@ private:
 
 class declaration : public expr {
 public:
-	declaration(std::string name, type t, node* expression)
+	declaration(const std::string& name, const type& t, node* expression)
 		: name{name}, _t{t}, expression{expression} {}
 
-	type t() const { return _t; }
+	const type& t() const { return _t; }
 
 	void verify_semantic() {
 		if (expression)
@@ -404,12 +409,14 @@ private:
 
 class func : public node {
 public:
-	func(std::vector<arg> args, std::string name, type t, block code)
+	func(
+		const std::vector<arg>& args, const std::string& name, const type& t,
+		const block& code)
 		: args{args}, name{name}, _t{t}, code{code} {}
-	func(std::string name, type t, block code)
+	func(const std::string& name, const type& t, const block& code)
 		: name{name}, _t{t}, code{code} {}
 
-	type t() const { return _t; }
+	const type& t() const { return _t; }
 
 	void verify_semantic() { code.verify_semantic(); }
 
@@ -424,9 +431,10 @@ private:
 class func_call : public expr {
 public:
 	func_call(
-		std::string name, std::vector<expr*> parameters, yy::location location)
+		const std::string& name, const std::vector<expr*>& parameters,
+		const yy::location& location)
 		: expr{}, name{name}, parameters{parameters}, location{location} {}
-	func_call(std::string name, yy::location location)
+	func_call(const std::string& name, const yy::location& location)
 		: expr{}, name{name}, location{location} {}
 
 	const std::string& func_name() const { return name; }
@@ -434,7 +442,7 @@ public:
 	/* check if the called function exists in the symbol table */
 	void verify_semantic();
 
-	type t() const;
+	const type& t() const;
 
 private:
 	std::string name;

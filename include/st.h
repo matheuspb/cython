@@ -19,7 +19,7 @@ public:
 	explicit variable(ast::type t) : st_entry{}, t{t} {}
 	void initialize() { initialized = true; }
 	bool is_initialized() { return initialized; }
-	ast::type type() const { return t; }
+	const ast::type& type() const { return t; }
 
 private:
 	ast::type t;
@@ -78,11 +78,11 @@ public:
 		}
 	}
 
-	ast::type get_type(const std::string& name) const {
+	const ast::type& get_type(const std::string& name) const {
 		return dynamic_cast<variable*>(lookup(name))->type();
 	}
 
-	ast::type get_function_return_type(const std::string& name) const {
+	const ast::type& get_function_return_type(const std::string& name) const {
 		return dynamic_cast<function*>(lookup(name))->declaration->t();
 	}
 

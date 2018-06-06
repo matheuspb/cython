@@ -23,6 +23,6 @@ void ast::func_call::verify_semantic() {
 			throw semantic_error(location, "invalid parameter type");
 }
 
-ast::type ast::func_call::t() const {
+const ast::type& ast::func_call::t() const {
 	return current->get_function_return_type(name);
 }
