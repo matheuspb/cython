@@ -2,7 +2,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <string>
-#include <lexical_error.h>
+#include <errors.h>
 #include <parser.h>
 
 #define yyterminate() \
