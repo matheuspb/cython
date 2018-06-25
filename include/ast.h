@@ -186,7 +186,8 @@ public:
 						return Builder.CreateFAdd(l, r, "addtmp");
 					return Builder.CreateAdd(l, r, "addtmp");
 				case exp:
-
+					// missing
+					return nullptr
 				case _and:
 					return Builder.CreateAnd(l, r, "andtmp");
 				case _or:
@@ -229,13 +230,17 @@ public:
 	}
 
 	virtual Value* codegen() {
+		Value* l = operand->codegen();
+
 		switch(op) {
 			case _not:
-				return Builder.CreateNot(operand, "nottmp");
+				if (operand->t() == _float)
+					l = Builder.CreateFPToSI(l, Type:getInt32Ty(TheContext), "inttmp")
+				return Builder.CreateNot(l, "nottmp");
 			case uminus:
 				if (t() == _float)
-					return Builder.CreateFNeg(operand, "umintmp");
-				return Builder.CreateNeg(operand, "umintmp");
+					return Builder.CreateFNeg(l, "umintmp");
+				return Builder.CreateNeg(l, "umintmp");
 		}
 	}
 
