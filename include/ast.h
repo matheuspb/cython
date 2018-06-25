@@ -154,7 +154,19 @@ public:
 
 		if ( !l || !r) return nullptr;
 
-		// missing casting of left and right
+		if (t() == _float) {
+			if (left->t() != _float)
+				l = Builder.CreateSIToFP(l, Type:getDoubleTy(TheContext), "inttmp");
+			if (right->t() != _float)
+				r = Builder.CreateSIToFP(r, Type:getDoubleTy(TheContext), "inttmp");
+		}
+		else {
+			// verificar se é int 32 msm
+			if (left->t() == _float)
+				l = Builder.CreateFPToSI(l, Type:getInt32Ty(TheContext), "inttmp");
+			if (right->t() == _float)
+				r = Builder.CreateFPToSI(r, Type:getInt32Ty(TheContext), "inttmp");
+		}
 
 		switch (op): {
 				case minus:
@@ -404,7 +416,9 @@ public:
 
 	void verify_semantic() {}
 
-	virtual Value* codegen() {}
+	virtual Value* codegen() {
+		return ConstantFP::get(getGlobalContext(), APInt(value));
+	}
 
 private:
 	type _t;
@@ -450,7 +464,9 @@ public:
 
 	void verify_semantic() {}
 
-	virtual Value* codegen() {}
+	virtual Value* codegen() {
+		return ConstantFP::get(getGlobalContext(), APInt(b));
+	}
 
 private:
 	type _t;
