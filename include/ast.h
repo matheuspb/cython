@@ -35,6 +35,7 @@ public:
 
 	/* do semantic verifications on function calls */
 	virtual void verify_semantic() = 0;
+	virtual Value* codegen() = 0;
 };
 
 class block : public node {
@@ -48,6 +49,7 @@ public:
 		for (auto line : lines)
 			line->verify_semantic();
 	}
+	virtual Value* codegen();
 
 private:
 	std::vector<node*> lines;
@@ -145,6 +147,54 @@ public:
 		_t = left->t().cast(right->t(), op);
 	}
 
+	virtual Value* codegen() {
+		Value* l = left->codegen();
+		Value* r = right->coegen();
+
+
+		if ( !l || !r) return nullptr;
+
+		// missing casting of left and right
+
+		switch (op): {
+				case minus:
+					if (t() == _float)
+						return Builder.CreateFSub(l, r, "subtmp");
+					return Builder.CreateSub(l, r, "subtmp");
+				case times:
+					if (t() == _float)
+						return Builder.CreateFMul(l, r, "multmp");
+					return Builder.CreateMul(l, r, "multmp");
+				case div:
+					if (t() == _float)
+						return Builder.CreateFDiv(l, r, "divtmp");
+					return Builder.CreateSDiv(l, r, "divtmp");
+				case plus:
+					if (t() == _float)
+						return Builder.CreateFAdd(l, r, "addtmp");
+					return Builder.CreateAdd(l, r, "addtmp");
+				case exp:
+
+				case _and:
+					return Builder.CreateAnd(l, r, "andtmp");
+				case _or:
+					return Builder.CreateOr(l, r, "ortmp");
+				case gt:
+					return Builder.CreateICmpSGT(l, r, "cmpttmp"); 
+				case lt:
+					// Integer Compare Signed Lower Than
+					return Builder.CreateICmpSLT(l, r, "cmpttmp"); 
+				case ge:
+					return Builder.CreateICmpSGE(l, r, "cmpttmp"); 
+				case le:
+					return Builder.CreateICmpSLE(l, r, "cmpttmp"); 
+				case eq:
+					return Builder.CreateICmpEQ(l, r, "cmpttmp"); 
+				case ne:
+					return Builder.CreateICmpNE(l, r, "cmpttmp"); 
+		}
+	}
+
 private:
 	operation op;
 	type _t;
@@ -164,6 +214,17 @@ public:
 		if (!operand->t().compatible())
 			throw semantic_error(yy::location(), "invalid types for operation");
 		_t = operand->t().cast(operand->t(), op);
+	}
+
+	virtual Value* codegen() {
+		switch(op) {
+			case _not:
+				return Builder.CreateNot(operand, "nottmp");
+			case uminus:
+				if (t() == _float)
+					return Builder.CreateFNeg(operand, "umintmp");
+				return Builder.CreateNeg(operand, "umintmp");
+		}
 	}
 
 private:
@@ -189,6 +250,8 @@ public:
 			offset->verify_semantic();
 	}
 
+	virtual Value* codegen() {}
+
 private:
 	std::string _identifier;
 	type _t;
@@ -211,6 +274,8 @@ public:
 								"expression and name type differ");
 	}
 
+	virtual Value* codegen() {}
+
 private:
 	name variable;
 	expr* expression;
@@ -231,6 +296,8 @@ public:
 				"invalid type for if statement"
 				", only int, float and bool can be used for if operations.");
 	}
+
+	virtual Value* codegen() {}
 
 private:
 	expr* cond;
@@ -262,6 +329,8 @@ public:
 				", only int, float and bool can be used for if operations.");
 	}
 
+	virtual Value* codegen() {}
+
 private:
 	expr* cond;
 	block if_block;
@@ -287,6 +356,8 @@ public:
 								" can be used for conditions.");
 	}
 
+	virtual Value* codegen();
+
 private:
 	node* init;
 	expr* condition;
@@ -305,6 +376,8 @@ public:
 		code.verify_semantic();
 	}
 
+	virtual Value* codegen() {}
+
 private:
 	node* condition;
 	block code;
@@ -317,6 +390,8 @@ public:
 
 	void verify_semantic() { expression->verify_semantic(); }
 
+	virtual Value* codegen() {}
+
 private:
 	node* expression;
 };
@@ -328,6 +403,8 @@ public:
 	const type& t() const { return _t; }
 
 	void verify_semantic() {}
+
+	virtual Value* codegen() {}
 
 private:
 	type _t;
@@ -342,6 +419,9 @@ public:
 
 	void verify_semantic() {}
 
+	virtual Value* codegen() {
+		return ConstantFP::get(getGlobalContext(), APFloat(value));
+	}
 private:
 	type _t;
 	double value;
@@ -355,6 +435,8 @@ public:
 
 	void verify_semantic() {}
 
+	virtual Value* codegen() {}
+
 private:
 	type _t;
 	std::string str;
@@ -367,6 +449,8 @@ public:
 	const type& t() const { return _t; }
 
 	void verify_semantic() {}
+
+	virtual Value* codegen() {}
 
 private:
 	type _t;
@@ -382,6 +466,8 @@ public:
 	const type& t() const { return _t; }
 
 	void verify_semantic() {}
+
+	virtual Value* codegen() {}
 
 private:
 	std::string identifier;
@@ -400,6 +486,8 @@ public:
 		if (expression)
 			expression->verify_semantic();
 	}
+
+	virtual Value* codegen() {}
 
 private:
 	std::string name;
@@ -422,6 +510,8 @@ public:
 
 	const std::vector<arg> args;
 
+	virtual Value* codegen() {}
+
 private:
 	std::string name;
 	type _t;
@@ -441,6 +531,8 @@ public:
 
 	/* check if the called function exists in the symbol table */
 	void verify_semantic();
+
+	virtual Value* codegen() {}
 
 	const type& t() const;
 
