@@ -11,9 +11,10 @@
 %code requires
 {
 #include <string>
-#include <list>
-#include <lexical_error.h>
+#include <vector>
+#include <errors.h>
 #include <ast.h>
+#include <st.h>
 }
 
 %code
@@ -22,7 +23,9 @@ extern FILE* yyin;
 extern yy::cython_parser::symbol_type yylex();
 extern void yypop_buffer_state();
 
-std::list<ast::node*> program;
+/* current symbol table being used during parsing */
+st::symbol_table* current = new st::symbol_table;
+std::vector<ast::node*> program;
 }
 
 /* terminal symbols */
@@ -83,15 +86,15 @@ std::list<ast::node*> program;
 
 /* non-terminal symbols */
 %type <ast::block> inner_block block else
-%type <ast::node*> line declaration func_declaration expression atom_expr
+%type <ast::expr*> expression atom_expr assignment func_call
+%type <ast::node*> line declaration func_declaration
 %type <ast::node*> statement if_stmt for_stmt while_stmt return_stmt
-%type <ast::node*> assignment func_call
-%type <std::list<ast::elif_stmt>> elif
+%type <std::vector<ast::elif_stmt>> elif
 %type <ast::name> name
 %type <ast::arg> arg
 %type <ast::type> type
-%type <std::list<ast::arg>> args_list
-%type <std::list<ast::node*>> parameters
+%type <std::vector<ast::arg>> args_list
+%type <std::vector<ast::expr*>> parameters
 
 /* precedence */
 %right ASSIGN
@@ -119,19 +122,45 @@ program_
 	| func_declaration { program.push_back($1); }
 	;
 
+start_scope
+	: %empty { current = new st::symbol_table(current); }
+	;
+
+end_scope
+	: %empty { current = current->parent; }
+	;
+
 declaration
-	: IDENTIFIER COLON type { $$ = new ast::declaration($1, $3, nullptr); }
+	: IDENTIFIER COLON type {
+		$$ = new ast::declaration($1, $3, nullptr);
+		if ($3.t() == ast::_void)
+			throw semantic_error(@1, "cannot declare variable of type void");
+		if (!current->insert_variable($1, $3))
+			throw semantic_error(@1, "variable " + $1 + " already declared");
+	}
 	| IDENTIFIER COLON type ASSIGN expression {
 		$$ = new ast::declaration($1, $3, $5);
+		if ($3.t() == ast::_void)
+			throw semantic_error(@1, "cannot declare variable of type void");
+		if (!current->insert_variable($1, $3))
+			throw semantic_error(@1, "variable " + $1 + " already declared");
+		current->initialize_variable($1);
 	}
 	;
 
 func_declaration
-	: DEF IDENTIFIER LPAREN args_list RPAREN ARROW type block nl {
-		$$ = new ast::func($2, $4, $7, $8);
+	: DEF IDENTIFIER start_scope LPAREN args_list RPAREN
+			ARROW type block end_scope nl {
+		auto node = new ast::func($5, $2, $8, $9);
+		$$ = node;
+		if (!current->insert_function($2, node))
+			throw semantic_error(@1, "function " + $2 + " already defined");
 	}
-	| DEF IDENTIFIER LPAREN RPAREN ARROW type block nl {
-		$$ = new ast::func($2, $6, $7);
+	| DEF IDENTIFIER start_scope LPAREN RPAREN ARROW type block end_scope nl {
+		auto node = new ast::func($2, $7, $8);
+		$$ = node;
+		if (!current->insert_function($2, node))
+			throw semantic_error(@1, "function " + $2 + " already defined");
 	}
 	;
 
@@ -159,47 +188,49 @@ statement
 
 expression
 	: expression PLUS expression {
-		$$ = new ast::binary_operation(ast::plus, $1, $3);
+		$$ = new ast::binary_operation(ast::plus, $1, $3, @2);
 	}
 	| expression MINUS expression {
-		$$ = new ast::binary_operation(ast::minus, $1, $3);
+		$$ = new ast::binary_operation(ast::minus, $1, $3, @2);
 	}
 	| expression TIMES expression {
-		$$ = new ast::binary_operation(ast::times, $1, $3);
+		$$ = new ast::binary_operation(ast::times, $1, $3, @2);
 	}
 	| expression DIV expression {
-		$$ = new ast::binary_operation(ast::div, $1, $3);
+		$$ = new ast::binary_operation(ast::div, $1, $3, @2);
 	}
 	| expression EXP expression {
-		$$ = new ast::binary_operation(ast::exp, $1, $3);
+		$$ = new ast::binary_operation(ast::exp, $1, $3, @2);
 	}
 	| expression AND expression {
-		$$ = new ast::binary_operation(ast::_and, $1, $3);
+		$$ = new ast::binary_operation(ast::_and, $1, $3, @2);
 	}
 	| expression OR expression {
-		$$ = new ast::binary_operation(ast::_or, $1, $3);
+		$$ = new ast::binary_operation(ast::_or, $1, $3, @2);
 	}
-	| NOT expression { $$ = new ast::unary_operation(ast::_not, $2); }
+	| NOT expression {
+		$$ = new ast::unary_operation(ast::_not, $2, @1);
+	}
 	| MINUS expression %prec UMINUS {
-		$$ = new ast::unary_operation(ast::uminus, $2);
+		$$ = new ast::unary_operation(ast::uminus, $2, @1);
 	}
 	| expression GT expression {
-		$$ = new ast::binary_operation(ast::gt, $1, $3);
+		$$ = new ast::binary_operation(ast::gt, $1, $3, @2);
 	}
 	| expression LT expression {
-		$$ = new ast::binary_operation(ast::lt, $1, $3);
+		$$ = new ast::binary_operation(ast::lt, $1, $3, @2);
 	}
 	| expression GE expression {
-		$$ = new ast::binary_operation(ast::ge, $1, $3);
+		$$ = new ast::binary_operation(ast::ge, $1, $3, @2);
 	}
 	| expression LE expression {
-		$$ = new ast::binary_operation(ast::le, $1, $3);
+		$$ = new ast::binary_operation(ast::le, $1, $3, @2);
 	}
 	| expression EQ expression {
-		$$ = new ast::binary_operation(ast::eq, $1, $3);
+		$$ = new ast::binary_operation(ast::eq, $1, $3, @2);
 	}
 	| expression NE expression {
-		$$ = new ast::binary_operation(ast::ne, $1, $3);
+		$$ = new ast::binary_operation(ast::ne, $1, $3, @2);
 	}
 	| LPAREN expression RPAREN { $$ = $2; }
 	| assignment { $$ = $1; }
@@ -207,7 +238,12 @@ expression
 	;
 
 atom_expr
-	: name { $$ = new ast::name($1); }
+	: name {
+		if (!current->is_initialized($1.identifier()))
+			throw semantic_error(@1,
+				"use of uninitialized variable " + $1.identifier());
+		$$ = new ast::name($1);
+	}
 	| func_call { $$ = $1; }
 	| INT_L { $$ = new ast::int_l($1); }
 	| FLOAT_L { $$ = new ast::float_l($1); }
@@ -216,12 +252,17 @@ atom_expr
 	;
 
 assignment
-	: name ASSIGN expression { $$ = new ast::assignment($1, $3); }
+	: name ASSIGN expression {
+		$$ = new ast::assignment($1, $3, $1.t());
+		current->initialize_variable($1.identifier());
+	}
 	;
 
 func_call
-	: IDENTIFIER LPAREN parameters RPAREN { $$ = new ast::func_call($1, $3); }
-	| IDENTIFIER LPAREN RPAREN { $$ = new ast::func_call($1); }
+	: IDENTIFIER LPAREN parameters RPAREN {
+		$$ = new ast::func_call($1, $3, @1);
+	}
+	| IDENTIFIER LPAREN RPAREN { $$ = new ast::func_call($1, @1); }
 	;
 
 parameters
@@ -232,13 +273,13 @@ parameters
 if_stmt
 	: IF expression DO inner_block END_T {
 		$$ = new ast::if_stmt(
-			$2, $4, std::list<ast::elif_stmt>(), ast::block());
+			$2, $4, std::vector<ast::elif_stmt>(), ast::block());
 	}
 	| IF expression DO inner_block elif END_T {
 		$$ = new ast::if_stmt($2, $4, $5, ast::block());
 	}
 	| IF expression DO inner_block else END_T {
-		$$ = new ast::if_stmt($2, $4, std::list<ast::elif_stmt>(), $5);
+		$$ = new ast::if_stmt($2, $4, std::vector<ast::elif_stmt>(), $5);
 	}
 	| IF expression DO inner_block elif else END_T {
 		$$ = new ast::if_stmt($2, $4, $5, $6);
@@ -269,7 +310,8 @@ for_stmt
 	;
 
 while_stmt
-	: WHILE expression block { $$ = new ast::while_stmt($2, $3); }
+	: WHILE expression block {
+		$$ = new ast::while_stmt($2, $3); }
 	;
 
 return_stmt
@@ -282,22 +324,35 @@ args_list
 	;
 
 arg
-	: IDENTIFIER COLON type { $$ = ast::arg($1, $3, false); }
-	| IDENTIFIER AMPERSEND COLON type { $$ = ast::arg($1, $4, true); }
+	: IDENTIFIER COLON type {
+		current->insert_variable($1, $3);
+		current->initialize_variable($1);
+		$$ = ast::arg($1, $3, false);
+	}
+	| IDENTIFIER AMPERSEND COLON type {
+		// TODO reference (&) arguments
+		current->insert_variable($1, $4);
+		current->initialize_variable($1);
+		$$ = ast::arg($1, $4, true);
+	}
 	;
 
 type
 	: type LBRACKET RBRACKET { $1.add_dimension(0); $$ = $1; }
 	| type LBRACKET INT_L RBRACKET { $1.add_dimension($3); $$ = $1; }
-	| INT { $$ = ast::type(ast::type::_int); }
-	| FLOAT { $$ = ast::type(ast::type::_float); }
-	| CHAR { $$ = ast::type(ast::type::_char); }
-	| VOID { $$ = ast::type(ast::type::_void); }
+	| INT { $$ = ast::type(ast::_int); }
+	| FLOAT { $$ = ast::type(ast::_float); }
+	| CHAR { $$ = ast::type(ast::_char); }
+	| VOID { $$ = ast::type(ast::_void); }
 	;
 
 name
 	: name LBRACKET expression RBRACKET { $1.add_offset($3); $$ = $1; }
-	| IDENTIFIER { $$ = ast::name($1); }
+	| IDENTIFIER {
+		if (!current->is_declared($1))
+			throw semantic_error(@1, "use of undeclared variable " + $1);
+		$$ = ast::name($1, current->get_type($1));
+	}
 	;
 
 nl
@@ -322,7 +377,13 @@ int main(int argc, char** argv) {
 	try {
 		yy::cython_parser p;
 		p.parse();
+
+		for (auto n: program)
+			n->verify_semantic();
 	} catch (const lexical_error& e) {
+		yypop_buffer_state();  // cleans scanner memory
+		show_error(e.location(), e.what());
+	} catch (const semantic_error& e) {
 		yypop_buffer_state();  // cleans scanner memory
 		show_error(e.location(), e.what());
 	}
