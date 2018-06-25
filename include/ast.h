@@ -422,7 +422,7 @@ public:
 	void verify_semantic() {}
 
 	virtual Value* codegen() {
-		return ConstantFP::get(getGlobalContext(), APInt(value));
+		return ConstantInt::get(getGlobalContext(), APInt(value));
 	}
 
 private:
@@ -514,6 +514,7 @@ private:
 	std::string name;
 	type _t;
 	node* expression;
+	expr* expression;
 };
 
 class func : public node {
