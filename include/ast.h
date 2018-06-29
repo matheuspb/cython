@@ -51,7 +51,7 @@ public:
 
 	/* do semantic verifications on function calls */
 	virtual void verify_semantic() = 0;
-	virtual Value* codegen() = 0;
+	Value* codegen();
 };
 
 class block : public node {
