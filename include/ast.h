@@ -1,12 +1,20 @@
 #ifndef AST_H
 #define AST_H
 
+#include "llvm/ADT/APInt.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/LLVMContext.h"
 #include <errors.h>
 #include <location.hh>
 #include <string>
 #include <vector>
 
 namespace ast {
+
+using namespace llvm;
+
+static LLVMContext TheContext;
+static IRBuilder<> Builder(TheContext);
 
 enum operation {
 	plus,
@@ -49,7 +57,8 @@ public:
 		for (auto line : lines)
 			line->verify_semantic();
 	}
-	virtual Value* codegen();
+
+	Value* codegen(){};
 
 private:
 	std::vector<node*> lines;
@@ -147,64 +156,67 @@ public:
 		_t = left->t().cast(right->t(), op);
 	}
 
-	virtual Value* codegen() {
+	Value* codegen() {
 		Value* l = left->codegen();
-		Value* r = right->coegen();
+		Value* r = right->codegen();
 
+		if (!l || !r)
+			return nullptr;
 
-		if ( !l || !r) return nullptr;
-
-		if (t() == _float) {
-			if (left->t() != _float)
-				l = Builder.CreateSIToFP(l, Type:getDoubleTy(TheContext), "inttmp");
-			if (right->t() != _float)
-				r = Builder.CreateSIToFP(r, Type:getDoubleTy(TheContext), "inttmp");
-		}
-		else {
+		if (t().t() == _float) {
+			if (left->t().t() != _float)
+				l = Builder.CreateSIToFP(
+					l, Type::getDoubleTy(TheContext), "inttmp");
+			if (right->t().t() != _float)
+				r = Builder.CreateSIToFP(
+					r, Type::getDoubleTy(TheContext), "inttmp");
+		} else {
 			// verificar se é int 32 msm
-			if (left->t() == _float)
-				l = Builder.CreateFPToSI(l, Type:getInt32Ty(TheContext), "inttmp");
-			if (right->t() == _float)
-				r = Builder.CreateFPToSI(r, Type:getInt32Ty(TheContext), "inttmp");
+			if (left->t().t() == _float)
+				l = Builder.CreateFPToSI(
+					l, Type::getInt32Ty(TheContext), "inttmp");
+			if (right->t().t() == _float)
+				r = Builder.CreateFPToSI(
+					r, Type::getInt32Ty(TheContext), "inttmp");
 		}
 
-		switch (op): {
-				case minus:
-					if (t() == _float)
-						return Builder.CreateFSub(l, r, "subtmp");
-					return Builder.CreateSub(l, r, "subtmp");
-				case times:
-					if (t() == _float)
-						return Builder.CreateFMul(l, r, "multmp");
-					return Builder.CreateMul(l, r, "multmp");
-				case div:
-					if (t() == _float)
-						return Builder.CreateFDiv(l, r, "divtmp");
-					return Builder.CreateSDiv(l, r, "divtmp");
-				case plus:
-					if (t() == _float)
-						return Builder.CreateFAdd(l, r, "addtmp");
-					return Builder.CreateAdd(l, r, "addtmp");
-				case exp:
-					// missing
-					return nullptr
-				case _and:
-					return Builder.CreateAnd(l, r, "andtmp");
-				case _or:
-					return Builder.CreateOr(l, r, "ortmp");
-				case gt:
-					return Builder.CreateICmpSGT(l, r, "cmpttmp"); 
-				case lt:
-					// Integer Compare Signed Lower Than
-					return Builder.CreateICmpSLT(l, r, "cmpttmp"); 
-				case ge:
-					return Builder.CreateICmpSGE(l, r, "cmpttmp"); 
-				case le:
-					return Builder.CreateICmpSLE(l, r, "cmpttmp"); 
-				case eq:
-					return Builder.CreateICmpEQ(l, r, "cmpttmp"); 
-				case ne:
-					return Builder.CreateICmpNE(l, r, "cmpttmp"); 
+		switch (op) {
+		case minus:
+			if (t().t() == _float)
+				return Builder.CreateFSub(l, r, "subtmp");
+			return Builder.CreateSub(l, r, "subtmp");
+		case times:
+			if (t().t() == _float)
+				return Builder.CreateFMul(l, r, "multmp");
+			return Builder.CreateMul(l, r, "multmp");
+		case div:
+			if (t().t() == _float)
+				return Builder.CreateFDiv(l, r, "divtmp");
+			return Builder.CreateSDiv(l, r, "divtmp");
+		case plus:
+			if (t().t() == _float)
+				return Builder.CreateFAdd(l, r, "addtmp");
+			return Builder.CreateAdd(l, r, "addtmp");
+		case exp:
+			// missing
+			return nullptr;
+		case _and:
+			return Builder.CreateAnd(l, r, "andtmp");
+		case _or:
+			return Builder.CreateOr(l, r, "ortmp");
+		case gt:
+			return Builder.CreateICmpSGT(l, r, "cmpttmp");
+		case lt:
+			// Integer Compare Signed Lower Than
+			return Builder.CreateICmpSLT(l, r, "cmpttmp");
+		case ge:
+			return Builder.CreateICmpSGE(l, r, "cmpttmp");
+		case le:
+			return Builder.CreateICmpSLE(l, r, "cmpttmp");
+		case eq:
+			return Builder.CreateICmpEQ(l, r, "cmpttmp");
+		case ne:
+			return Builder.CreateICmpNE(l, r, "cmpttmp");
 		}
 	}
 
@@ -229,18 +241,19 @@ public:
 		_t = operand->t().cast(operand->t(), op);
 	}
 
-	virtual Value* codegen() {
+	Value* codegen() {
 		Value* l = operand->codegen();
 
-		switch(op) {
-			case _not:
-				if (operand->t() == _float)
-					l = Builder.CreateFPToSI(l, Type:getInt32Ty(TheContext), "inttmp")
-				return Builder.CreateNot(l, "nottmp");
-			case uminus:
-				if (t() == _float)
-					return Builder.CreateFNeg(l, "umintmp");
-				return Builder.CreateNeg(l, "umintmp");
+		switch (op) {
+		case _not:
+			if (operand->t().t() == _float)
+				l = Builder.CreateFPToSI(
+					l, Type::getInt32Ty(TheContext), "inttmp");
+			return Builder.CreateNot(l, "nottmp");
+		case uminus:
+			if (t().t() == _float)
+				return Builder.CreateFNeg(l, "umintmp");
+			return Builder.CreateNeg(l, "umintmp");
 		}
 	}
 
@@ -267,7 +280,7 @@ public:
 			offset->verify_semantic();
 	}
 
-	virtual Value* codegen() {}
+	Value* codegen() {}
 
 private:
 	std::string _identifier;
@@ -291,7 +304,7 @@ public:
 								"expression and name type differ");
 	}
 
-	virtual Value* codegen() {}
+	Value* codegen() {}
 
 private:
 	name variable;
@@ -314,7 +327,7 @@ public:
 				", only int, float and bool can be used for if operations.");
 	}
 
-	virtual Value* codegen() {}
+	Value* codegen() {}
 
 private:
 	expr* cond;
@@ -346,7 +359,7 @@ public:
 				", only int, float and bool can be used for if operations.");
 	}
 
-	virtual Value* codegen() {}
+	Value* codegen() {}
 
 private:
 	expr* cond;
@@ -373,7 +386,7 @@ public:
 								" can be used for conditions.");
 	}
 
-	virtual Value* codegen();
+	Value* codegen(){};
 
 private:
 	node* init;
@@ -393,7 +406,7 @@ public:
 		code.verify_semantic();
 	}
 
-	virtual Value* codegen() {}
+	Value* codegen() {}
 
 private:
 	node* condition;
@@ -407,7 +420,7 @@ public:
 
 	void verify_semantic() { expression->verify_semantic(); }
 
-	virtual Value* codegen() {}
+	Value* codegen() {}
 
 private:
 	node* expression;
@@ -421,9 +434,7 @@ public:
 
 	void verify_semantic() {}
 
-	virtual Value* codegen() {
-		return ConstantInt::get(getGlobalContext(), APInt(value));
-	}
+	Value* codegen() { return ConstantInt::get(TheContext, APInt(value, 32)); }
 
 private:
 	type _t;
@@ -438,9 +449,8 @@ public:
 
 	void verify_semantic() {}
 
-	virtual Value* codegen() {
-		return ConstantFP::get(getGlobalContext(), APFloat(value));
-	}
+	Value* codegen() { return ConstantFP::get(TheContext, APFloat(value)); }
+
 private:
 	type _t;
 	double value;
@@ -454,7 +464,7 @@ public:
 
 	void verify_semantic() {}
 
-	virtual Value* codegen() {}
+	Value* codegen() {}
 
 private:
 	type _t;
@@ -469,9 +479,7 @@ public:
 
 	void verify_semantic() {}
 
-	virtual Value* codegen() {
-		return ConstantFP::get(getGlobalContext(), APInt(b));
-	}
+	Value* codegen() { return ConstantInt::get(TheContext, APInt(b, 32)); }
 
 private:
 	type _t;
@@ -488,7 +496,7 @@ public:
 
 	void verify_semantic() {}
 
-	virtual Value* codegen() {}
+	Value* codegen() {}
 
 private:
 	std::string identifier;
@@ -498,7 +506,7 @@ private:
 
 class declaration : public expr {
 public:
-	declaration(const std::string& name, const type& t, node* expression)
+	declaration(const std::string& name, const type& t, expr* expression)
 		: name{name}, _t{t}, expression{expression} {}
 
 	const type& t() const { return _t; }
@@ -508,12 +516,11 @@ public:
 			expression->verify_semantic();
 	}
 
-	virtual Value* codegen() {}
+	Value* codegen() {}
 
 private:
 	std::string name;
 	type _t;
-	node* expression;
 	expr* expression;
 };
 
@@ -532,7 +539,7 @@ public:
 
 	const std::vector<arg> args;
 
-	virtual Value* codegen() {}
+	Value* codegen() {}
 
 private:
 	std::string name;
@@ -554,7 +561,7 @@ public:
 	/* check if the called function exists in the symbol table */
 	void verify_semantic();
 
-	virtual Value* codegen() {}
+	Value* codegen() {}
 
 	const type& t() const;
 

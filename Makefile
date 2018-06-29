@@ -1,4 +1,4 @@
-.PHONY: all clean
+.PHONY: all clean format
 
 TARGET = cython
 SOURCE_DIR = src
@@ -6,6 +6,7 @@ INCLUDE_DIR = include
 
 CPPFLAGS = -std=c++11 -I$(INCLUDE_DIR) -Wall -Wextra -g
 LDFLAGS = -lstdc++
+LDFLAGS += `llvm-config --ldflags --system-libs --libs core`
 
 SCANNER_L = $(SOURCE_DIR)/scanner.l
 SCANNER_SRC = $(SOURCE_DIR)/scanner.cpp
@@ -31,6 +32,9 @@ $(PARSER_SRC) $(PARSER_H): $(PARSER_Y)
 $(I_TARGET): $(OBJ_FILES)
 $(TARGET): $(I_TARGET)
 	cp $^ $@
+
+format:
+	clang-format --style=file -i **/*.{h,cpp}
 
 clean:
 	rm -f $(TARGET) $(I_TARGET) $(OBJ_FILES)
