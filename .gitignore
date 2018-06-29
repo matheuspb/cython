@@ -5,3 +5,4 @@ src/parser.cpp
 include/parser.h
 src/parser
 cython
+.DS_Store
