@@ -15,6 +15,8 @@ using namespace llvm;
 
 static LLVMContext TheContext;
 static IRBuilder<> Builder(TheContext);
+static std::map<std::string, Value *> NamedValues;
+static std::unique_ptr<Module> TheModule;
 
 enum operation {
 	plus,
@@ -280,7 +282,10 @@ public:
 			offset->verify_semantic();
 	}
 
-	Value* codegen() {}
+	Value* codegen() {
+		Value* V = NamedValues[_identifier];
+		return V;
+	}
 
 private:
 	std::string _identifier;
@@ -496,7 +501,13 @@ public:
 
 	void verify_semantic() {}
 
-	Value* codegen() {}
+	Value* codegen() {
+
+	}
+
+	const std::string getId() {
+		return identifier;
+	}
 
 private:
 	std::string identifier;
@@ -516,7 +527,7 @@ public:
 			expression->verify_semantic();
 	}
 
-	Value* codegen() {}
+	std::vector<Type*> codegen() {}
 
 private:
 	std::string name;
@@ -539,7 +550,44 @@ public:
 
 	const std::vector<arg> args;
 
-	Value* codegen() {}
+	Function* codegen() {
+
+		std::vector<Type*> types;
+
+		for (unsigned i = 0, e = args.size(); i != e; i++) {
+			if (args[i].t().t() == _float)
+				types.push_back(Type::getDoubleTy(TheContext)]);
+			else
+				types.push_back(Type::getInt32Ty(TheContext)])
+		}
+
+		FunctionType* ft;
+		if (_t.t() == _float)
+			ft = FunctionType::get(Type::getDoubleTy(TheContext), types, false);
+		else
+			ft = FunctionType::get(Type::getInt32Ty(TheContext), types, false);
+
+		Function* f = Function::Create(FT, Function::ExternalLinkage, name, TheModule);
+
+		unsigned i = 0;
+		for (auto &arg : f->args()) {
+			arg.setName(args[i].getId());
+			i++;
+		}
+
+		BasicBlock* bb = BasicBlock::Create(TheContext, "entry", f);
+		Builder.SetInsertPoint(bb);
+
+		NamedValues.clear();
+		for(auto &arg : f->args())
+			NamedValues[arg.getName()] = &arg;
+
+		Builder.CreateRet(code->codegen()) 
+		
+		verifyFunction(*f);
+
+		return f;
+	}
 
 private:
 	std::string name;
@@ -561,7 +609,15 @@ public:
 	/* check if the called function exists in the symbol table */
 	void verify_semantic();
 
-	Value* codegen() {}
+	Value* codegen() {
+		Function* call = TheModule->getFunction(name);
+		std::vector<Value*> args;
+		for (unsigned i = 0, e = args.parameters.size(); i != e; i++) {
+			args.push_back(parameters[i]->codegen() );
+		}
+
+		return Builder.CreateCall(call, args, "calltmp");
+	}
 
 	const type& t() const;
 
