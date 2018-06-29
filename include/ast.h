@@ -4,8 +4,14 @@
 #include "llvm/ADT/APInt.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Type.h"
+#include "llvm/IR/Verifier.h"
 #include <errors.h>
 #include <location.hh>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -501,13 +507,11 @@ public:
 
 	void verify_semantic() {}
 
-	Value* codegen() {
-
-	}
-
-	const std::string getId() {
+	std::string& getId() {
 		return identifier;
 	}
+
+	Value* codegen() {}
 
 private:
 	std::string identifier;
@@ -556,18 +560,16 @@ public:
 
 		for (unsigned i = 0, e = args.size(); i != e; i++) {
 			if (args[i].t().t() == _float)
-				types.push_back(Type::getDoubleTy(TheContext)]);
-			else
-				types.push_back(Type::getInt32Ty(TheContext)])
+				types.push_back(Type::getDoubleTy(TheContext));
+			else types.push_back(Type::getInt32Ty(TheContext));
 		}
 
 		FunctionType* ft;
 		if (_t.t() == _float)
 			ft = FunctionType::get(Type::getDoubleTy(TheContext), types, false);
-		else
-			ft = FunctionType::get(Type::getInt32Ty(TheContext), types, false);
+		else ft = FunctionType::get(Type::getInt32Ty(TheContext), types, false);
 
-		Function* f = Function::Create(FT, Function::ExternalLinkage, name, TheModule);
+		Function* f = Function::Create(ft, Function::ExternalLinkage, name, TheModule);
 
 		unsigned i = 0;
 		for (auto &arg : f->args()) {
@@ -582,7 +584,7 @@ public:
 		for(auto &arg : f->args())
 			NamedValues[arg.getName()] = &arg;
 
-		Builder.CreateRet(code->codegen()) 
+		Builder.CreateRet(code.codegen());
 		
 		verifyFunction(*f);
 
@@ -612,7 +614,7 @@ public:
 	Value* codegen() {
 		Function* call = TheModule->getFunction(name);
 		std::vector<Value*> args;
-		for (unsigned i = 0, e = args.parameters.size(); i != e; i++) {
+		for (unsigned i = 0, e = parameters.size(); i != e; i++) {
 			args.push_back(parameters[i]->codegen() );
 		}
 
