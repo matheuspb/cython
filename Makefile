@@ -1,4 +1,4 @@
-.PHONY: all clean
+.PHONY: all format clean
 
 TARGET = cython
 SOURCE_DIR = src
@@ -31,6 +31,9 @@ $(PARSER_SRC) $(PARSER_H): $(PARSER_Y)
 $(I_TARGET): $(OBJ_FILES)
 $(TARGET): $(I_TARGET)
 	cp $^ $@
+
+format:
+	clang-format --style=file -i **/*.{h,cpp}
 
 clean:
 	rm -f $(TARGET) $(I_TARGET) $(OBJ_FILES)
